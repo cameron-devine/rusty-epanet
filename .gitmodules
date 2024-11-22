@@ -1,0 +1,3 @@
+[submodule "EPANET"]
+	path = EPANET
+	url = https://github.com/OpenWaterAnalytics/EPANET.git

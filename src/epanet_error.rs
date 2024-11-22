@@ -1,6 +1,6 @@
 use core::fmt;
 use ffi::EN_SizeLimits_EN_MAXMSG;
-use libepanet_sys as ffi;
+use crate::bindings as ffi;
 use std::ffi::{c_char, CStr};
 
 /// EPANET Errors
@@ -9,6 +9,9 @@ pub struct EPANETError {
     _code: i32,
     _message: String,
 }
+
+/// EPANET Result type with EPANET specific errors
+pub type Result<T> = std::result::Result<T, EPANETError>;
 
 /// Convert error code from C library into EPANETError
 impl From<i32> for EPANETError {
