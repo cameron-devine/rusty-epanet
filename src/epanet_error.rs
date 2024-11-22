@@ -1,6 +1,6 @@
+use crate::bindings as ffi;
 use core::fmt;
 use ffi::EN_SizeLimits_EN_MAXMSG;
-use crate::bindings as ffi;
 use std::ffi::{c_char, CStr};
 
 /// EPANET Errors

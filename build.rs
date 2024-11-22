@@ -2,12 +2,14 @@ use cmake::Config;
 use std::{env, path::PathBuf};
 
 fn main() {
-
     let dst = Config::new("EPANET")
         .define("CMAKE_BUILD_TYPE", "Release")
         .build();
 
-    println!("cargo:rustc-link-search=native={}", dst.join("lib").display());
+    println!(
+        "cargo:rustc-link-search=native={}",
+        dst.join("lib").display()
+    );
     println!("cargo:rustc-link-lib=dylib=epanet2");
 
     // The bindgen::Builder is the main entry point
@@ -30,5 +32,4 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
-
 }

@@ -1,5 +1,5 @@
 use bindings as ffi;
-use std::ffi::{CString};
+use std::ffi::CString;
 use std::mem::MaybeUninit;
 
 use epanet_error::*;
@@ -35,8 +35,6 @@ impl EPANET {
             }
         }
     }
-
-
 }
 
 impl Drop for EPANET {
@@ -51,7 +49,7 @@ impl Drop for EPANET {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use types::ENNodeType;
+    use types::NodeType;
 
     #[test]
     fn nodes() {
@@ -59,7 +57,7 @@ mod tests {
             EPANET::new("../libepanet-sys/EPANET/example-networks/Net1.inp", "", "")
                 .expect("ERROR OPENING PROJECT");
 
-        let index = EPANET::add_node(&mut en_project, "N2", ENNodeType::Junction).unwrap();
+        let index = EPANET::add_node(&mut en_project, "N2", NodeType::Junction).unwrap();
         assert_eq!(index, 10);
         let index = EPANET::get_node_index(&mut en_project, "N2").unwrap();
         assert_eq!(index, 10);
@@ -68,7 +66,7 @@ mod tests {
     }
 }
 
-pub mod impls;
-pub mod types;
 mod bindings;
 pub mod epanet_error;
+pub mod impls;
+pub mod types;

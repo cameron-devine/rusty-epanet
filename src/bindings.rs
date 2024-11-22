@@ -8,11 +8,11 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::c_char;
     use std::{
         ffi::{CStr, CString},
         i32,
     };
-    use std::ffi::c_char;
 
     static DATA_PATH_NET1: &str = "./EPANET/example-networks/Net1.inp";
     static DATA_PATH_RPT: &str = "./test.rpt";

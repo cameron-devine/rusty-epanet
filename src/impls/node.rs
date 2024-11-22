@@ -1,11 +1,9 @@
-use crate::EPANET;
 use crate::bindings as ffi;
-use ffi::{
-    EN_SizeLimits_EN_MAXMSG,
-};
-use crate::types as types;
-use types::{ENNodeType, ENActionCode};
 use crate::epanet_error::*;
+use crate::types;
+use crate::EPANET;
+use ffi::EN_SizeLimits_EN_MAXMSG;
+use types::{ActionCodeType, NodeType};
 
 use std::ffi::{c_char, CStr, CString};
 use std::mem::MaybeUninit;
@@ -13,7 +11,7 @@ use std::mem::MaybeUninit;
 impl EPANET {
     /// Add a node to the project with a given name and type.
     /// Returns the index of the node or an error.
-    pub fn add_node(&mut self, id: &str, node_type: ENNodeType) -> Result<i32> {
+    pub fn add_node(&mut self, id: &str, node_type: NodeType) -> Result<i32> {
         let _id = CString::new(id).unwrap();
         let mut out_index = MaybeUninit::uninit();
         unsafe {
@@ -29,7 +27,7 @@ impl EPANET {
         }
     }
 
-    pub fn delete_node(&mut self, id: i32, action_code: ENActionCode) -> Result<()> {
+    pub fn delete_node(&mut self, id: i32, action_code: ActionCodeType) -> Result<()> {
         unsafe {
             match ffi::EN_deletenode(self.ph, id, action_code as i32) {
                 0 => Ok(()),
