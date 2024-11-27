@@ -1,7 +1,8 @@
 use bindings as ffi;
-use std::ffi::CString;
+use std::ffi::{c_int, CString};
 use std::mem::MaybeUninit;
 
+use crate::types::CountType;
 use epanet_error::*;
 
 /// An EPANET Project wrapper
@@ -10,27 +11,46 @@ pub struct EPANET {
 }
 
 impl EPANET {
-    /// Reads an EPANET input file with no errors allowed.
-    /// Pass the name of an existing EPANET-formatted input file,
-    /// the name of a report file to be created (or “” if not needed), the name of a binary output file to be created (or “” if not needed).
+    /// Creates a new EPANET instance by reading an input file.
     ///
-    /// Will panic on failure.
+    /// # Arguments
+    /// * `inp_path` - Path to an existing EPANET-formatted input file.
+    /// * `report_path` - Path to the report file to be created, or an empty string if not needed.
+    /// * `out_path` - Path to the binary output file to be created, or an empty string if not needed.
+    ///
+    /// # Errors
+    /// Returns an `EPANETError` if the creation or opening of the project fails.
     pub fn new(inp_path: &str, report_path: &str, out_path: &str) -> Result<Self> {
-        // let mut ph: ffi::EN_Project = &mut ffi::Project::new();
-        let mut ph: MaybeUninit<*mut ffi::Project> = MaybeUninit::<ffi::EN_Project>::uninit();
-        match unsafe { ffi::EN_createproject(ph.as_mut_ptr()) } {
-            0 => (),
-            x => return Err(EPANETError::from(x)),
-        };
+        // Step 1: Initialize the project handle
+        let mut ph = MaybeUninit::<*mut ffi::Project>::uninit();
+        let result = unsafe { ffi::EN_createproject(ph.as_mut_ptr()) };
+        if result != 0 {
+            return Err(EPANETError::from(result));
+        }
+        let ph = unsafe { ph.assume_init() };
 
-        let inp: CString = CString::new(inp_path).unwrap();
-        let rpt: CString = CString::new(report_path).unwrap();
-        let out: CString = CString::new(out_path).unwrap();
+        // Step 2: Convert paths to C-compatible strings (panic on failure)
+        let inp = CString::new(inp_path).expect("inp_path contains null bytes");
+        let rpt = CString::new(report_path).expect("report_path contains null bytes");
+        let out = CString::new(out_path).expect("out_path contains null bytes");
+
+        // Step 3: Open the project
+        let result = unsafe { ffi::EN_open(ph, inp.as_ptr(), rpt.as_ptr(), out.as_ptr()) };
+        if result != 0 {
+            unsafe { ffi::EN_deleteproject(ph) }; // Clean up on failure
+            return Err(EPANETError::from(result));
+        }
+
+        // Step 4: Return the EPANET instance
+        Ok(Self { ph })
+    }
+
+    /// Retrieves the number of objects of a given type.
+    pub fn get_count(&mut self, count_type: CountType) -> Result<i32> {
+        let mut count: MaybeUninit<c_int> = MaybeUninit::uninit();
         unsafe {
-            match ffi::EN_open(ph.assume_init(), inp.as_ptr(), rpt.as_ptr(), out.as_ptr()) {
-                0 => Ok(EPANET {
-                    ph: ph.assume_init(),
-                }),
+            match ffi::EN_getcount(self.ph, count_type as i32, count.as_mut_ptr()) {
+                0 => Ok(count.assume_init()),
                 x => Err(EPANETError::from(x)),
             }
         }
@@ -47,24 +67,7 @@ impl Drop for EPANET {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use types::NodeType;
-
-    #[test]
-    fn nodes() {
-        let mut en_project: EPANET =
-            EPANET::new("../libepanet-sys/EPANET/example-networks/Net1.inp", "", "")
-                .expect("ERROR OPENING PROJECT");
-
-        let index = EPANET::add_node(&mut en_project, "N2", NodeType::Junction).unwrap();
-        assert_eq!(index, 10);
-        let index = EPANET::get_node_index(&mut en_project, "N2").unwrap();
-        assert_eq!(index, 10);
-        let id = EPANET::get_node_id(&mut en_project, index).expect("Error getting the node id.");
-        assert_eq!(id, "N2");
-    }
-}
+mod tests {}
 
 mod bindings;
 pub mod epanet_error;

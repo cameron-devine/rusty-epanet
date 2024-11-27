@@ -423,5 +423,3 @@ pub enum RuleStatus {
     IsClosed = EN_RuleStatus_EN_R_IS_CLOSED, // Link is closed
     IsActive = EN_RuleStatus_EN_R_IS_ACTIVE, // Control valve is active
 }}
-
-

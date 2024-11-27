@@ -1,47 +1,83 @@
 use crate::bindings as ffi;
-use core::fmt;
 use ffi::EN_SizeLimits_EN_MAXMSG;
+use std::error::Error;
 use std::ffi::{c_char, CStr};
-
-/// EPANET Errors
-#[derive(Debug, Clone)]
-pub struct EPANETError {
-    _code: i32,
-    _message: String,
-}
+use std::fmt::{Display, Formatter};
 
 /// EPANET Result type with EPANET specific errors
 pub type Result<T> = std::result::Result<T, EPANETError>;
+
+/// Represents errors returned by the EPANET library.
+///
+/// EPANET errors consist of a numeric error code, a descriptive message, and an optional
+/// context string that provides additional information about the error's origin or usage.
+///
+/// # Fields
+/// * `_code` - The numeric error code returned by the EPANET library.
+/// * `_message` - A human-readable description of the error associated with the error code.
+/// * `_context` - Optional additional context about the error, such as the operation or parameters
+///                that caused it.
+#[derive(Debug, Clone)]
+pub struct EPANETError {
+    code: i32,
+    message: String,
+    context: Option<String>,
+}
+
+impl Display for EPANETError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.context.is_some() {
+            return write!(f, "{} - {:?}", self.message, self.context.as_ref().unwrap());
+        }
+        write!(f, "{}", self.message)
+    }
+}
+
+impl PartialEq for EPANETError {
+    fn eq(&self, other: &Self) -> bool {
+        self.code == other.code
+    }
+}
+
+impl Error for EPANETError {}
+
+impl EPANETError {
+    /// Adds context to the `EPANETError`, returning a new error with the context included.
+    ///
+    /// # Arguments
+    /// * `context` - A string providing additional information about the error.
+    pub fn with_context(mut self, context: impl Into<String>) -> Self {
+        self.context = Some(context.into());
+        self
+    }
+}
 
 /// Convert error code from C library into EPANETError
 impl From<i32> for EPANETError {
     fn from(error: i32) -> Self {
         let out_errmsg: Vec<c_char> = vec![0; EN_SizeLimits_EN_MAXMSG as usize];
-        unsafe {
-            match ffi::EN_geterror(
+        match unsafe {
+            ffi::EN_geterror(
                 error,
                 out_errmsg.as_ptr() as *mut i8,
-                ffi::EN_SizeLimits_EN_MAXMSG as i32,
-            ) {
-                0 => EPANETError {
-                    _code: error,
-                    _message: CStr::from_ptr(out_errmsg.as_ptr())
+                EN_SizeLimits_EN_MAXMSG as i32,
+            )
+        } {
+            0 => EPANETError {
+                code: error,
+                message: unsafe {
+                    CStr::from_ptr(out_errmsg.as_ptr())
                         .to_str()
                         .unwrap()
-                        .to_string(),
+                        .to_string()
                 },
-                x => EPANETError {
-                    _code: x,
-                    _message: String::from("UNKNOWN ERROR"),
-                },
-            }
+                context: None,
+            },
+            x => EPANETError {
+                code: x,
+                message: String::from("UNKNOWN ERROR"),
+                context: None,
+            },
         }
-    }
-}
-
-/// Display the epanet error code
-impl fmt::Display for EPANETError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "EPANET Error Code {}: {}", self._code, self._message)
     }
 }
