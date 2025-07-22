@@ -1,16 +1,19 @@
+//! Node-related API methods for EPANET.
+//!
+//! This module contains methods for adding, deleting, and querying nodes.
+
 use crate::bindings as ffi;
 use crate::epanet_error::*;
 use crate::types;
 use crate::EPANET;
 use types::{ActionCodeType, NodeType};
-
-use crate::ffi::{EN_NodeProperty, EN_SizeLimits_EN_MAXID};
 use crate::types::CountType::NodeCount;
-use crate::types::NodeProperty;
+use crate::types::{NodeProperty, MAX_MSG_SIZE};
 use enum_primitive::FromPrimitive;
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::mem::MaybeUninit;
 
+/// ## Node APIs
 impl EPANET {
     /// Adds a new node to the EPANET model.
     ///
@@ -32,7 +35,7 @@ impl EPANET {
     ///
     /// # Implementation Details
     /// - Converts the `id` string into a `CString` to ensure compatibility with the C API.
-    /// - Calls the EPANET C API function [`ffi::EN_addnode`] to add the node and retrieve its index.
+    /// - Calls the EPANET C API function EN_addnode to add the node and retrieve its index.
     /// - Returns the index of the newly added node on success.
     ///
     /// # Safety
@@ -51,7 +54,7 @@ impl EPANET {
     ///   for debugging.
     ///
     /// # See Also
-    /// - [`ffi::EN_addnode`] for the underlying C API call.
+    /// - EN_addnode (EPANET C API)
     /// - [`NodeType`] for possible node types.
     pub fn add_node(&mut self, id: &str, node_type: NodeType) -> Result<i32> {
         let _id = CString::new(id).unwrap();
@@ -90,7 +93,7 @@ impl EPANET {
     ///   code and additional context about the operation.
     ///
     /// # Implementation Details
-    /// - Calls the EPANET C API function [`ffi::EN_deletenode`] to delete the node and apply
+    /// - Calls the EPANET C API function EN_deletenode to delete the node and apply
     ///   the specified action.
     ///
     /// # Safety
@@ -109,7 +112,7 @@ impl EPANET {
     ///   code for debugging.
     ///
     /// # See Also
-    /// - [`ffi::EN_deletenode`] for the underlying C API call.
+    /// - `EN_deletenode` (EPANET C API)
     /// - [`ActionCodeType`] for possible adjustment actions when deleting a node.
     pub fn delete_node(&mut self, id: i32, action_code: ActionCodeType) -> Result<()> {
         unsafe {
@@ -140,7 +143,7 @@ impl EPANET {
     ///
     /// # Implementation Details
     /// - Converts the `id` string into a `CString` to ensure compatibility with the C API.
-    /// - Uses the EPANET C API function [`ffi::EN_getnodeindex`] to retrieve the node index.
+    /// - Uses the EPANET C API function EN_getnodeindex to retrieve the node index.
     /// - Returns the retrieved index on success.
     ///
     /// # Safety
@@ -156,7 +159,7 @@ impl EPANET {
     /// - Includes additional context in the error message, specifying the node ID for debugging.
     ///
     /// # See Also
-    /// - [`ffi::EN_getnodeindex`] for the underlying C API call.
+    /// - EN_getnodeindex (EPANET C API)
     pub fn get_node_index(&mut self, id: &str) -> Result<i32> {
         let _id = CString::new(id).unwrap();
         let mut out_index = MaybeUninit::uninit();
@@ -186,8 +189,8 @@ impl EPANET {
     ///
     /// # Implementation Details
     /// - Allocates a buffer (`Vec<c_char>`) large enough to hold the node ID based on
-    ///   the EPANET-defined size limit [`EN_SizeLimits_EN_MAXMSG`].
-    /// - Calls the EPANET C API function [`ffi::EN_getnodeid`] to populate the buffer with
+    ///   the EPANET-defined size limit [`MAX_MSG_SIZE`].
+    /// - Calls the EPANET C API function EN_getnodeid to populate the buffer with
     ///   the node ID.
     /// - Converts the resulting C string into a Rust `String` for ergonomic usage.
     ///
@@ -205,10 +208,10 @@ impl EPANET {
     /// - Includes additional context in the error message, specifying the node index for debugging.
     ///
     /// # See Also
-    /// - [`ffi::EN_getnodeid`] for the underlying C API call.
-    /// - [`EN_SizeLimits_EN_MAXMSG`] for the size limit used for node IDs.
+    /// - EN_getnodeid (EPANET C API)
+    /// - [`MAX_MSG_SIZE`] for the size limit used for node IDs.
     pub fn get_node_id(&mut self, index: i32) -> Result<String> {
-        let mut out_id: Vec<c_char> = vec![0; EN_SizeLimits_EN_MAXID as usize + 1usize];
+        let mut out_id: Vec<c_char> = vec![0; MAX_MSG_SIZE as usize + 1usize];
         unsafe {
             match ffi::EN_getnodeid(self.ph, index, out_id.as_mut_ptr()) {
                 0 => Ok(CStr::from_ptr(out_id.as_ptr())
@@ -240,7 +243,7 @@ impl EPANET {
     ///
     /// # Implementation Details
     /// - Converts the `node_id` string into a `CString` to ensure compatibility with the C API.
-    /// - Uses the EPANET C API function [`ffi::EN_setnodeid`] to update the node's ID.
+    /// - Uses the EPANET C API function EN_setnodeid to update the node's ID.
     ///
     /// # Safety
     /// This function uses `unsafe` code to interface with the EPANET C API. While the caller
@@ -258,7 +261,7 @@ impl EPANET {
     ///   for debugging.
     ///
     /// # See Also
-    /// - [`ffi::EN_setnodeid`] for the underlying C API call.
+    /// - EN_setnodeid (EPANET C API)
     pub fn set_node_id(&mut self, index: i32, node_id: &str) -> Result<()> {
         let _id = CString::new(node_id).unwrap();
         unsafe {
@@ -288,7 +291,7 @@ impl EPANET {
     ///   and additional context about the operation.
     ///
     /// # Implementation Details
-    /// - The function uses the EPANET C API function [`ffi::EN_getnodetype`] to retrieve
+    /// - The function uses the EPANET C API function EN_getnodetype to retrieve
     ///   the type of the node.
     /// - It converts the raw integer type returned by the FFI call into a [`NodeType`]
     ///   enumeration using the `from_i32` method. The function assumes that the
@@ -305,7 +308,7 @@ impl EPANET {
     /// - Includes additional context in the error message, specifying the node index for debugging.
     ///
     /// # See Also
-    /// - [`ffi::EN_getnodetype`] for the underlying C API call.
+    /// - EN_getnodetype (EPANET C API)
     /// - [`NodeType`] for the list of possible node types returned by this function.
     pub fn get_node_type(&mut self, index: i32) -> Result<NodeType> {
         let mut node_type: MaybeUninit<c_int> = MaybeUninit::uninit();
@@ -363,7 +366,7 @@ impl EPANET {
     ///   being retrieved.
     ///
     /// # See Also
-    /// - [`ffi::EN_getnodevalues`] for the underlying C API call.
+    /// - EN_getnodevalues (EPANET C API)
     /// - [`NodeProperty`] for the list of available properties that can be retrieved.
     /// - [`get_count`] for determining the total number of nodes.
     pub fn get_node_values(&mut self, node_property: NodeProperty) -> Result<Vec<f64>> {
@@ -412,7 +415,7 @@ impl EPANET {
     ///   for example, due to an invalid node index or property.
     ///
     /// # See Also
-    /// - [`ffi::EN_getnodevalue`] for the underlying C API call.
+    /// - EN_getnodevalue (EPANET C API)
     pub fn get_node_value(&mut self, index: i32, node_property: NodeProperty) -> Result<f64> {
         let mut value: MaybeUninit<f64> = MaybeUninit::uninit();
         unsafe {
@@ -459,7 +462,7 @@ impl EPANET {
     ///   and property type, to aid in debugging.
     ///
     /// # See Also
-    /// - [`ffi::EN_setnodevalue`] for the underlying C API call.
+    /// - EN_setnodevalue (EPANET C API)
     pub fn set_node_value(
         &mut self,
         index: usize,
@@ -482,48 +485,43 @@ impl EPANET {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::impls::test_utils::fixtures::*;
+    use rstest::rstest;
     use crate::types::ActionCodeType::Unconditional;
-    use crate::types::NodeProperty::{BaseDemand, Elevation, Emitter, InitQual, Pattern};
+    use crate::types::NodeProperty::*;
     use crate::types::NodeType::{Junction, Reservoir, Tank};
 
-    #[test]
-    fn add_delete_nodes() {
-        let mut en_project: EPANET =
-            EPANET::new("EPANET/example-networks/Net1.inp", "", "").expect("ERROR OPENING PROJECT");
-
-        let result = en_project.add_node("N2", Junction);
+    #[rstest]
+    fn add_delete_nodes(mut ph_close: EPANET) {
+        let result = ph_close.add_node("N2", Junction);
         assert!(result.is_ok());
-        let result = en_project.add_node("N4", Tank);
+        let result = ph_close.add_node("N4", Tank);
         assert!(result.is_ok());
-        let result = en_project.add_node("N3", Reservoir);
+        let result = ph_close.add_node("N3", Reservoir);
         assert!(result.is_ok());
-        let result = en_project.add_node("N1", Junction);
+        let result = ph_close.add_node("N1", Junction);
         assert!(result.is_ok());
 
-        let result = en_project.get_node_index("N1");
+        let result = ph_close.get_node_index("N1");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 11);
-        let result = en_project.get_node_index("N2");
+        assert_eq!(result.unwrap(), 2);
+        let result = ph_close.get_node_index("N2");
         assert!(result.is_ok());
-        let result = en_project.delete_node(result.unwrap(), Unconditional);
+        let result = ph_close.delete_node(result.unwrap(), Unconditional);
         assert!(result.is_ok());
 
-        let result = en_project.get_node_index("N4");
+        let result = ph_close.get_node_index("N4");
         assert!(result.is_ok());
-        let result = en_project.delete_node(result.unwrap(), Unconditional);
+        let result = ph_close.delete_node(result.unwrap(), Unconditional);
         assert!(result.is_ok());
-        let result = en_project.get_node_index("N3");
+        let result = ph_close.get_node_index("N3");
         assert!(result.is_ok());
-        let result = en_project.delete_node(result.unwrap(), Unconditional);
+        let result = ph_close.delete_node(result.unwrap(), Unconditional);
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn node_validate_id() {
-        let mut ph: EPANET =
-            EPANET::new("EPANET/example-networks/Net1.inp", "", "").expect("ERROR OPENING PROJECT");
-        let index: i32;
-
+    #[rstest]
+    fn node_validate_id(mut ph: EPANET) {
         // Test adding a valid node ID
         let result = ph.add_node("N2", NodeType::Junction);
         assert!(result.is_ok());
@@ -544,17 +542,14 @@ mod tests {
         assert_eq!(result.err().unwrap(), EPANETError::from(252));
 
         // Test renaming a node to an invalid ID
-        index = ph.get_node_index("N2").expect("Node 'N2' should exist");
+        let index = ph.get_node_index("N2").expect("Node 'N2' should exist");
         let result = ph.set_node_id(index, "N;2");
         assert!(result.is_err());
         assert_eq!(result.err().unwrap(), EPANETError::from(252));
     }
 
-    #[test]
-    fn node_junction_properties() {
-        let mut ph: EPANET =
-            EPANET::new("EPANET/example-networks/Net1.inp", "", "").expect("ERROR OPENING PROJECT");
-
+    #[rstest]
+    fn node_junction_properties(mut ph: EPANET) {
         // Fetch node index for node id "11"
         let index = ph.get_node_index("11").unwrap();
         assert_eq!(ph.get_node_value(index, Elevation).unwrap(), 710.0);
@@ -563,4 +558,30 @@ mod tests {
         assert_eq!(ph.get_node_value(index, Emitter).unwrap(), 0.0);
         assert_eq!(ph.get_node_value(index, InitQual).unwrap(), 0.5);
     }
+
+    #[rstest]
+    fn node_tank_properties(mut ph: EPANET) {
+        use crate::types::NodeProperty::{Elevation, TankLevel, MinLevel, MaxLevel, TankDiam, MinVolume};
+
+        let index = ph.get_node_index("2").unwrap();
+
+        assert_eq!(ph.get_node_value(index, Elevation).unwrap(), 850.0);
+        assert_eq!(ph.get_node_value(index, TankLevel).unwrap(), 120.0);
+        assert_eq!(ph.get_node_value(index, MinLevel).unwrap(), 100.0);
+        assert_eq!(ph.get_node_value(index, MaxLevel).unwrap(), 150.0);
+        assert_eq!(ph.get_node_value(index, TankDiam).unwrap(), 50.5);
+        assert!(approx_eq(ph.get_node_value(index, MinVolume).unwrap(), 200296.167, 1e-3));
+    }
+
+    #[rstest]
+    fn node_junction_properties_after_step(mut after_step: EPANET) {
+        // Fetch node index for node id "11"
+        let index = after_step.get_node_index("11").unwrap();
+
+        assert!(approx_eq(after_step.get_node_value(index, Demand).unwrap(), 179.999,1e-3));
+        assert!(approx_eq(after_step.get_node_value(index, Head).unwrap(), 991.574, 1e-3));
+        assert!(approx_eq(after_step.get_node_value(index, Pressure).unwrap(), 122.006,1e-3));
+        assert!(approx_eq(after_step.get_node_value(index, Quality).unwrap(), 0.857,1e-3));
+    }
 }
+

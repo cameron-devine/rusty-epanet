@@ -6,9 +6,12 @@ pub const MAX_ID_SIZE: EN_SizeLimits = EN_SizeLimits_EN_MAXID;
 /// Max message size
 pub const MAX_MSG_SIZE: EN_SizeLimits = EN_SizeLimits_EN_MAXMSG;
 
+/// Max project title size. Taken from the EPANET C API source code.
+pub const MAX_TITLE_SIZE: EN_SizeLimits = 79;
+
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum NodeProperty {
     Elevation = EN_NodeProperty_EN_ELEVATION, // Elevation
     BaseDemand = EN_NodeProperty_EN_BASEDEMAND, // Primary demand baseline value
@@ -47,7 +50,7 @@ pub enum NodeProperty {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum LinkProperty {
     Diameter = EN_LinkProperty_EN_DIAMETER, // Pipe/valve diameter
     Length = EN_LinkProperty_EN_LENGTH, // Pipe length
@@ -82,7 +85,7 @@ pub enum LinkProperty {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum CurveType {
     VolumeCurve = EN_CurveType_EN_VOLUME_CURVE, // Tank volume v. depth curve
     PumpCurve = EN_CurveType_EN_PUMP_CURVE, // Pump head v. flow curve
@@ -94,7 +97,7 @@ pub enum CurveType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum TimeParameter {
     Duration = EN_TimeParameter_EN_DURATION, // Total simulation duration
     HydStep = EN_TimeParameter_EN_HYDSTEP, // Hydraulic time step
@@ -116,7 +119,7 @@ pub enum TimeParameter {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum TimestepEvent {
     StepReport = EN_TimestepEvent_EN_STEP_REPORT, // Report all time series points
     StepHyd = EN_TimestepEvent_EN_STEP_HYD, // Hydraulic step
@@ -127,7 +130,7 @@ pub enum TimestepEvent {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum AnalysisStatistic {
     Iterations = EN_AnalysisStatistic_EN_ITERATIONS, // Number of hydraulic iterations taken
     RelativeError = EN_AnalysisStatistic_EN_RELATIVEERROR, // Sum of link flow changes / sum of link flows
@@ -141,7 +144,7 @@ pub enum AnalysisStatistic {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum ObjectType {
     Node = EN_ObjectType_EN_NODE, // Nodes
     Link = EN_ObjectType_EN_LINK, // Links
@@ -153,7 +156,7 @@ pub enum ObjectType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum CountType {
     NodeCount = EN_CountType_EN_NODECOUNT, // Number of nodes (junctions + tanks + reservoirs)
     TankCount = EN_CountType_EN_TANKCOUNT, // Number of tanks and reservoirs
@@ -166,7 +169,7 @@ pub enum CountType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum NodeType {
     Junction = EN_NodeType_EN_JUNCTION, // Junction node
     Reservoir = EN_NodeType_EN_RESERVOIR, // Reservoir node
@@ -175,7 +178,7 @@ pub enum NodeType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum LinkType {
     CvPipe = EN_LinkType_EN_CVPIPE, // Pipe with check valve
     Pipe = EN_LinkType_EN_PIPE, // Pipe
@@ -191,7 +194,7 @@ pub enum LinkType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum LinkStatusType {
     Closed = EN_LinkStatusType_EN_CLOSED, // Link is closed
     Open = EN_LinkStatusType_EN_OPEN, // Link is open
@@ -199,7 +202,7 @@ pub enum LinkStatusType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum PumpStateType {
     PumpXHead = EN_PumpStateType_EN_PUMP_XHEAD, // Pump closed - cannot supply head
     PumpClosed = EN_PumpStateType_EN_PUMP_CLOSED, // Pump closed
@@ -209,7 +212,7 @@ pub enum PumpStateType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum QualityType {
     None = EN_QualityType_EN_NONE, // No quality analysis
     Chem = EN_QualityType_EN_CHEM, // Chemical fate and transport
@@ -219,7 +222,7 @@ pub enum QualityType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum SourceType {
     Concen = EN_SourceType_EN_CONCEN, // Sets the concentration of external inflow entering a node
     Mass = EN_SourceType_EN_MASS, // Injects a given mass/minute into a node
@@ -229,7 +232,7 @@ pub enum SourceType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum HeadLossType {
     HazenWilliams = EN_HeadLossType_EN_HW, // Hazen-Williams
     DarcyWeisbach = EN_HeadLossType_EN_DW, // Darcy-Weisbach
@@ -238,7 +241,7 @@ pub enum HeadLossType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum FlowUnits {
     Cfs = EN_FlowUnits_EN_CFS, // Cubic feet per second
     Gpm = EN_FlowUnits_EN_GPM, // Gallons per minute
@@ -255,7 +258,7 @@ pub enum FlowUnits {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum PressUnits {
     Psi = EN_PressUnits_EN_PSI, // Pounds per square inch
     Kpa = EN_PressUnits_EN_KPA, // Kilopascals
@@ -264,7 +267,7 @@ pub enum PressUnits {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum DemandModel {
     Dda = EN_DemandModel_EN_DDA, // Demand driven analysis
     Pda = EN_DemandModel_EN_PDA, // Pressure driven analysis
@@ -272,7 +275,7 @@ pub enum DemandModel {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum Option {
     Trials = EN_Option_EN_TRIALS, // Maximum trials allowed for hydraulic convergence
     Accuracy = EN_Option_EN_ACCURACY, // Total normalized flow change for hydraulic convergence
@@ -305,7 +308,7 @@ pub enum Option {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum ControlType {
     LowLevel = EN_ControlType_EN_LOWLEVEL, // Act when pressure or tank level drops below a setpoint
     HiLevel = EN_ControlType_EN_HILEVEL, // Act when pressure or tank level rises above a setpoint
@@ -315,7 +318,7 @@ pub enum ControlType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum StatisticType {
     Series = EN_StatisticType_EN_SERIES, // Report all time series points
     Average = EN_StatisticType_EN_AVERAGE, // Report average value over simulation period
@@ -326,7 +329,7 @@ pub enum StatisticType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum MixingModel {
     Mix1 = EN_MixingModel_EN_MIX1, // Complete mix model
     Mix2 = EN_MixingModel_EN_MIX2, // 2-compartment model
@@ -336,7 +339,7 @@ pub enum MixingModel {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum InitHydOption {
     NoSave = EN_InitHydOption_EN_NOSAVE, // Don't save hydraulics; don't re-initialize flows
     Save = EN_InitHydOption_EN_SAVE, // Save hydraulics to file, don't re-initialize flows
@@ -346,7 +349,7 @@ pub enum InitHydOption {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum PumpType {
     ConstHp = EN_PumpType_EN_CONST_HP, // Constant horsepower
     PowerFunc = EN_PumpType_EN_POWER_FUNC, // Power function
@@ -356,7 +359,7 @@ pub enum PumpType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum ActionCodeType {
     Unconditional = EN_ActionCodeType_EN_UNCONDITIONAL, // Delete all controls and connecting links
     Conditional = EN_ActionCodeType_EN_CONDITIONAL, // Cancel object deletion if it appears in controls or has connecting links
@@ -364,7 +367,7 @@ pub enum ActionCodeType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum StatusReport {
     NoReport = EN_StatusReport_EN_NO_REPORT, // No status reporting
     NormalReport = EN_StatusReport_EN_NORMAL_REPORT, // Normal level of status reporting
@@ -373,7 +376,7 @@ pub enum StatusReport {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum RuleObject {
     Node = EN_RuleObject_EN_R_NODE, // Clause refers to a node
     Link = EN_RuleObject_EN_R_LINK, // Clause refers to a link
@@ -382,7 +385,7 @@ pub enum RuleObject {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum RuleVariable {
     Demand = EN_RuleVariable_EN_R_DEMAND, // Nodal demand
     Head = EN_RuleVariable_EN_R_HEAD, // Nodal hydraulic head
@@ -401,7 +404,7 @@ pub enum RuleVariable {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum RuleOperator {
     Eq = EN_RuleOperator_EN_R_EQ, // Equal to
     Ne = EN_RuleOperator_EN_R_NE, // Not equal
@@ -417,7 +420,7 @@ pub enum RuleOperator {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum RuleStatus {
     IsOpen = EN_RuleStatus_EN_R_IS_OPEN, // Link is open
     IsClosed = EN_RuleStatus_EN_R_IS_CLOSED, // Link is closed

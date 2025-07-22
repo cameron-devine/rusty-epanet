@@ -4,6 +4,7 @@ use std::{env, path::PathBuf};
 fn main() {
     let dst = Config::new("EPANET")
         .define("CMAKE_BUILD_TYPE", "Release")
+        .define("BUILD_SHARED_LIBS", "OFF")
         .build();
 
     println!(

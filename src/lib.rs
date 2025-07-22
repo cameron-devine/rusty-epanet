@@ -1,8 +1,6 @@
 use bindings as ffi;
-use std::ffi::{c_int, CString};
-use std::mem::MaybeUninit;
-
-use crate::types::CountType;
+use std::ffi::{CString};
+use crate::types::{FlowUnits, HeadLossType};
 use epanet_error::*;
 
 /// An EPANET Project wrapper
@@ -11,6 +9,29 @@ pub struct EPANET {
 }
 
 impl EPANET {
+
+    /// Creates a new EPANET project handle by calling the underlying C API.
+    ///
+    /// # Returns
+    /// * `Ok(ffi::EN_Project)` - A valid project handle on success.
+    /// * `Err(EPANETError)` - An error if the project could not be created.
+    ///
+    /// # Safety
+    /// This function wraps an unsafe FFI call but is itself safe to use. The returned handle
+    /// must be properly closed and deleted to avoid resource leaks.
+    ///
+    /// # Errors
+    /// Returns an `EPANETError` if the underlying C function fails.
+
+    fn create_project_handle() -> Result<ffi::EN_Project> {
+        let mut ph: ffi::EN_Project = std::ptr::null_mut();
+        let result = unsafe { ffi::EN_createproject(&mut ph) };
+        if result != 0 {
+            Err(EPANETError::from(result))
+        } else {
+            Ok(ph)
+        }
+    }
     /// Creates a new EPANET instance by reading an input file.
     ///
     /// # Arguments
@@ -20,14 +41,28 @@ impl EPANET {
     ///
     /// # Errors
     /// Returns an `EPANETError` if the creation or opening of the project fails.
-    pub fn new(inp_path: &str, report_path: &str, out_path: &str) -> Result<Self> {
+    pub fn new(report_path: &str, out_path: &str, flow_units_type: FlowUnits, head_loss_type: HeadLossType) -> Result<Self> {
         // Step 1: Initialize the project handle
-        let mut ph = MaybeUninit::<*mut ffi::Project>::uninit();
-        let result = unsafe { ffi::EN_createproject(ph.as_mut_ptr()) };
+        let ph = Self::create_project_handle()?;
+
+        // Step 2: Convert paths to C-compatible strings (panic on failure)
+        let rpt = CString::new(report_path).expect("report_path contains null bytes");
+        let out = CString::new(out_path).expect("out_path contains null bytes");
+
+        // Step 3: Open the project
+        let result = unsafe { ffi::EN_init(ph, rpt.as_ptr(), out.as_ptr(), flow_units_type as i32, head_loss_type as i32) };
         if result != 0 {
+            unsafe { ffi::EN_deleteproject(ph) }; // Clean up on failure
             return Err(EPANETError::from(result));
         }
-        let ph = unsafe { ph.assume_init() };
+
+        // Step 4: Return the EPANET instance
+        Ok(Self { ph })
+    }
+
+    pub fn with_inp_file(inp_path: &str, report_path: &str, out_path: &str) -> Result<Self> {
+        // Step 1: Initialize the project handle
+        let ph = Self::create_project_handle()?;
 
         // Step 2: Convert paths to C-compatible strings (panic on failure)
         let inp = CString::new(inp_path).expect("inp_path contains null bytes");
@@ -45,17 +80,29 @@ impl EPANET {
         Ok(Self { ph })
     }
 
-    /// Retrieves the number of objects of a given type.
-    pub fn get_count(&mut self, count_type: CountType) -> Result<i32> {
-        let mut count: MaybeUninit<c_int> = MaybeUninit::uninit();
-        unsafe {
-            match ffi::EN_getcount(self.ph, count_type as i32, count.as_mut_ptr()) {
-                0 => Ok(count.assume_init()),
-                x => Err(EPANETError::from(x)),
-            }
+    pub fn with_inp_file_allow_errors(inp_path: &str, report_path: &str, out_path: &str) -> Result<Self> {
+        // Step 1: Initialize the project handle
+        let ph = Self::create_project_handle()?;
+
+        // Step 2: Convert paths to C-compatible strings (panic on failure)
+        let inp = CString::new(inp_path).expect("inp_path contains null bytes");
+        let rpt = CString::new(report_path).expect("report_path contains null bytes");
+        let out = CString::new(out_path).expect("out_path contains null bytes");
+
+        // Step 3: Open the project
+        let result = unsafe { ffi::EN_open(ph, inp.as_ptr(), rpt.as_ptr(), out.as_ptr()) };
+        if result != 0 {
+            unsafe { ffi::EN_deleteproject(ph) }; // Clean up on failure
+            return Err(EPANETError::from(result));
         }
+
+        // Step 4: Return the EPANET instance
+        Ok(Self { ph })
     }
 }
+
+unsafe impl Send for EPANET {}
+unsafe impl Sync for EPANET {}
 
 impl Drop for EPANET {
     fn drop(&mut self) {

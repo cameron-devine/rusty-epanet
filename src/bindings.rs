@@ -15,8 +15,8 @@ mod tests {
     };
 
     static DATA_PATH_NET1: &str = "./EPANET/example-networks/Net1.inp";
-    static DATA_PATH_RPT: &str = "./test.rpt";
-    static DATA_PATH_OUT: &str = "./test.out";
+    static DATA_PATH_RPT: &str = "";
+    static DATA_PATH_OUT: &str = "";
 
     #[test]
     fn test_project() {
