@@ -187,11 +187,13 @@ impl EPANET {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use std::fs;
     use super::*;
     use crate::impls::test_utils::fixtures::*;
     use rstest::rstest;
+
     #[rstest]
     pub fn test_demands(ph: EPANET) {
 
