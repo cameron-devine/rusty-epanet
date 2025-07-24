@@ -1,5 +1,10 @@
 use cmake::Config;
-use std::{env, path::PathBuf};
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, Write};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 fn main() {
     let dst = Config::new("EPANET")
@@ -33,4 +38,38 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+
+    // Generate error messages
+    let input_path = Path::new("EPANET/src/errors.dat");
+    let output_path = Path::new("src/error_messages.rs");
+
+    let input = File::open(input_path).expect("Failed to open errors.dat");
+    let reader = BufReader::new(input);
+
+    let mut output = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(output_path)
+        .expect("Failed to create error_messages.rs");
+
+    writeln!(
+        output,
+        "pub fn get_error_message(code: i32) -> &'static str {{\n    match code {{"
+    )
+    .unwrap();
+
+    for line in reader.lines() {
+        let line = line.unwrap();
+        if let Some(rest) = line.strip_prefix("DAT(") {
+            let parts: Vec<&str> = rest.trim_end_matches(')').splitn(2, ',').collect();
+            if parts.len() == 2 {
+                let code = parts[0].trim();
+                let msg = parts[1].trim().trim_matches('"');
+                writeln!(output, "        {} => \"{}\",", code, msg).unwrap();
+            }
+        }
+    }
+
+    writeln!(output, "        _ => \"UNKNOWN ERROR\",\n    }}\n}}").unwrap();
 }

@@ -1,6 +1,7 @@
-use rstest::fixture;
-use crate::EPANET;
 use crate::types::{FlowUnits, HeadLossType, InitHydOption};
+use crate::EPANET;
+use rstest::fixture;
+use crate::types::NodeType::Junction;
 
 pub fn approx_eq(a: f64, b: f64, tol: f64) -> bool {
     (a - b).abs() <= tol
@@ -13,11 +14,12 @@ pub fn ph() -> EPANET {
 
 #[fixture]
 pub fn ph_close() -> EPANET {
-    EPANET::new("", "", FlowUnits::Cfs, HeadLossType::HazenWilliams).expect("ERROR CREATING PROJECT")
+    EPANET::new("", "", FlowUnits::Cfs, HeadLossType::HazenWilliams)
+        .expect("ERROR CREATING PROJECT")
 }
 
 #[fixture]
-pub fn after_step(mut ph: EPANET) -> EPANET {
+pub fn after_step(ph: EPANET) -> EPANET {
     let t_stop = 10800;
 
     let mut result = ph.solve_h();
@@ -31,11 +33,22 @@ pub fn after_step(mut ph: EPANET) -> EPANET {
 
     loop {
         let t = ph.run_q().expect("Failed to run quality simulation");
-        let t_step = ph.step_q().expect("Failed to step through quality simulation");
+        let t_step = ph
+            .step_q()
+            .expect("Failed to step through quality simulation");
         println!("Time: {}s, TStep: {}s", t, t_step);
         if t_step <= 0 || t >= t_stop {
             break;
         }
     }
     ph
+}
+
+#[fixture]
+pub fn ph_single_node(ph_close: EPANET) -> EPANET {
+    
+    let result = ph_close.add_node("CUB_SCOUT_QUONSET_HUT", Junction);
+    assert!(result.is_ok());
+    
+    ph_close
 }

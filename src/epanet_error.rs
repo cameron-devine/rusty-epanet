@@ -1,10 +1,8 @@
-use crate::bindings as ffi;
-use ffi::EN_SizeLimits_EN_MAXMSG;
+use crate::error_messages::get_error_message;
 use std::error::Error;
-use std::ffi::{c_char, CStr};
 use std::fmt::{Display, Formatter};
 
-/// EPANET Result type with EPANET specific errors
+/// EPANET Result type with EPANET-specific errors
 pub type Result<T> = std::result::Result<T, EPANETError>;
 
 /// Represents errors returned by the EPANET library.
@@ -20,7 +18,7 @@ pub type Result<T> = std::result::Result<T, EPANETError>;
 #[derive(Debug, Clone)]
 pub struct EPANETError {
     code: i32,
-    message: String,
+    message: &'static str,
     context: Option<String>,
 }
 
@@ -52,32 +50,13 @@ impl EPANETError {
     }
 }
 
-/// Convert error code from C library into EPANETError
+/// Convert error code from the C library into EPANETError
 impl From<i32> for EPANETError {
     fn from(error: i32) -> Self {
-        let out_errmsg: Vec<c_char> = vec![0; EN_SizeLimits_EN_MAXMSG as usize];
-        match unsafe {
-            ffi::EN_geterror(
-                error,
-                out_errmsg.as_ptr() as *mut i8,
-                EN_SizeLimits_EN_MAXMSG as i32,
-            )
-        } {
-            0 => EPANETError {
-                code: error,
-                message: unsafe {
-                    CStr::from_ptr(out_errmsg.as_ptr())
-                        .to_str()
-                        .unwrap()
-                        .to_string()
-                },
-                context: None,
-            },
-            x => EPANETError {
-                code: x,
-                message: String::from("UNKNOWN ERROR"),
-                context: None,
-            },
+        EPANETError {
+            code: error,
+            message: get_error_message(error),
+            context: None,
         }
     }
 }

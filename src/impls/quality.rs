@@ -2,11 +2,11 @@
 //!
 //! This module contains methods for initializing, running, stepping, and closing water quality simulations.
 
-use std::mem::MaybeUninit;
-use crate::EPANET;
-use crate::ffi;
 use crate::epanet_error::*;
+use crate::ffi;
 use crate::types::InitHydOption;
+use crate::EPANET;
+use std::mem::MaybeUninit;
 
 /// ## Water Quality Analysis APIs
 impl EPANET {
@@ -31,7 +31,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_closeQ (EPANET C API)
-    pub fn close_q(&mut self) -> Result<()> {
+    pub fn close_q(&self) -> Result<()> {
         let result = unsafe { ffi::EN_closeQ(self.ph) };
         if result == 0 {
             Ok(())
@@ -65,7 +65,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_initQ (EPANET C API)
-    pub fn init_q(&mut self, save_flag: InitHydOption) -> Result<()> {
+    pub fn init_q(&self, save_flag: InitHydOption) -> Result<()> {
         let result = unsafe { ffi::EN_initQ(self.ph, save_flag as i32) };
         if result == 0 {
             Ok(())
@@ -95,7 +95,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_nextQ (EPANET C API)
-    pub fn next_q(&mut self) -> Result<u64> {
+    pub fn next_q(&self) -> Result<u64> {
         let mut out_t_step = MaybeUninit::uninit();
         let result = unsafe { ffi::EN_nextQ(self.ph, out_t_step.as_mut_ptr()) };
         if result == 0 {
@@ -126,7 +126,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_openQ (EPANET C API)
-    pub fn open_q(&mut self) -> Result<()> {
+    pub fn open_q(&self) -> Result<()> {
         let result = unsafe { ffi::EN_openQ(self.ph) };
         if result == 0 {
             Ok(())
@@ -156,7 +156,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_runQ (EPANET C API)
-    pub fn run_q(&mut self) -> Result<u64> {
+    pub fn run_q(&self) -> Result<u64> {
         let mut out_current_time = MaybeUninit::uninit();
         let result = unsafe { ffi::EN_runQ(self.ph, out_current_time.as_mut_ptr()) };
         if result == 0 {
@@ -187,7 +187,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_solveQ (EPANET C API)
-    pub fn solve_q(&mut self) -> Result<()> {
+    pub fn solve_q(&self) -> Result<()> {
         let result = unsafe { ffi::EN_solveQ(self.ph) };
         if result == 0 {
             Ok(())
@@ -217,7 +217,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_stepQ (EPANET C API)
-    pub fn step_q(&mut self) -> Result<u64> {
+    pub fn step_q(&self) -> Result<u64> {
         let mut out_time_left = MaybeUninit::uninit();
         let result = unsafe { ffi::EN_stepQ(self.ph, out_time_left.as_mut_ptr()) };
         if result == 0 {
@@ -225,5 +225,182 @@ impl EPANET {
         } else {
             Err(EPANETError::from(result))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::impls::test_utils::fixtures::*;
+    use crate::types::InitHydOption;
+    use crate::EPANET;
+    use rstest::rstest;
+
+    #[rstest]
+    pub fn test_solve_q(ph: EPANET) {
+        let mut result = ph.solve_h();
+        assert!(
+            result.is_ok(),
+            "Failed to solve hydraulic simulation: {:?}",
+            result
+        );
+
+        result = ph.solve_q();
+        assert!(
+            result.is_ok(),
+            "Failed to solve quality simulation: {:?}",
+            result
+        );
+
+        result = ph.report();
+        assert!(result.is_ok(), "Failed to report results: {:?}", result);
+    }
+
+    #[rstest]
+    pub fn test_solve_q_step(ph: EPANET) {
+        let t_stop = 10800; // 3 hours in seconds
+
+        let mut result = ph.solve_h();
+        assert!(
+            result.is_ok(),
+            "Failed to solve hydraulic simulation: {:?}",
+            result
+        );
+
+        result = ph.open_q();
+        assert!(
+            result.is_ok(),
+            "Failed to open quality simulation: {:?}",
+            result
+        );
+
+        result = ph.init_q(InitHydOption::NoSave);
+        assert!(
+            result.is_ok(),
+            "Failed to initialize quality simulation: {:?}",
+            result
+        );
+
+        loop {
+            let t_result = ph.run_q();
+            assert!(
+                t_result.is_ok(),
+                "Failed to run quality analysis: {:?}",
+                t_result
+            );
+
+            let t_step_result = ph.step_q();
+            assert!(
+                t_step_result.is_ok(),
+                "Failed to step through quality analysis: {:?}",
+                t_step_result
+            );
+
+            let t = t_result.unwrap();
+            let t_step = t_step_result.unwrap();
+            println!("Time: {}s, TStep: {}s", t, t_step);
+            if t_step <= 0 || t >= t_stop {
+                break;
+            }
+        }
+
+        result = ph.close_q();
+        assert!(
+            result.is_ok(),
+            "Failed to close quality simulation: {:?}",
+            result
+        );
+    }
+
+    #[rstest]
+    pub fn test_progressive_step(ph: EPANET) {
+        let mut result = ph.open_h();
+        assert!(
+            result.is_ok(),
+            "Failed to open hydraulic simulation: {:?}",
+            result
+        );
+
+        result = ph.init_h(InitHydOption::NoSave);
+        assert!(
+            result.is_ok(),
+            "Failed to initialize hydraulic simulation: {:?}",
+            result
+        );
+
+        result = ph.open_q();
+        assert!(
+            result.is_ok(),
+            "Failed to open quality simulation: {:?}",
+            result
+        );
+
+        result = ph.init_q(InitHydOption::NoSave);
+        assert!(
+            result.is_ok(),
+            "Failed to initialize quality simulation: {:?}",
+            result
+        );
+
+        result = ph.open_q();
+        assert!(
+            result.is_ok(),
+            "Failed to open quality simulation: {:?}",
+            result
+        );
+
+        result = ph.init_q(InitHydOption::NoSave);
+        assert!(
+            result.is_ok(),
+            "Failed to initialize quality simulation: {:?}",
+            result
+        );
+
+        loop {
+            let mut run_result = ph.run_h();
+            assert!(
+                run_result.is_ok(),
+                "Failed to run hydraulic simulation: {:?}",
+                result
+            );
+
+            run_result = ph.run_q();
+            assert!(
+                run_result.is_ok(),
+                "Failed to run quality simulation: {:?}",
+                result
+            );
+
+            let tstep_h = ph.next_h();
+            assert!(
+                tstep_h.is_ok(),
+                "Failed to step through hydraulic simulation: {:?}",
+                tstep_h
+            );
+
+            let tstep_q = ph.next_q();
+            assert!(
+                tstep_q.is_ok(),
+                "Failed to step through quality simulation: {:?}",
+                tstep_q
+            );
+
+            if tstep_h.unwrap() <= 0 {
+                break;
+            }
+        }
+
+        result = ph.close_h();
+        assert!(
+            result.is_ok(),
+            "Failed to close hydraulic simulation: {:?}",
+            result
+        );
+
+        result = ph.close_q();
+        assert!(
+            result.is_ok(),
+            "Failed to close quality simulation: {:?}",
+            result
+        );
     }
 }

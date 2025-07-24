@@ -4,18 +4,18 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::{CountType, FlowUnits, HeadLossType, ObjectType, MAX_MSG_SIZE, MAX_TITLE_SIZE};
+use crate::types::{CountType, ObjectType, MAX_MSG_SIZE, MAX_TITLE_SIZE};
 use crate::EPANET;
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::mem::MaybeUninit;
-use std::ptr::null_mut;
 
 /// ## Project APIs
 impl EPANET {
-
-    pub fn get_comment(&mut self, object_type: ObjectType, index: i32) -> Result<String> {
+    pub fn get_comment(&self, object_type: ObjectType, index: i32) -> Result<String> {
         let mut out_comment: Vec<c_char> = vec![0; MAX_MSG_SIZE as usize + 1usize];
-        let result = unsafe { ffi::EN_getcomment(self.ph, object_type as i32, index, out_comment.as_mut_ptr()) };
+        let result = unsafe {
+            ffi::EN_getcomment(self.ph, object_type as i32, index, out_comment.as_mut_ptr())
+        };
         if result == 0 {
             let comment = unsafe { CStr::from_ptr(out_comment.as_ptr()) }
                 .to_str()
@@ -42,7 +42,7 @@ impl EPANET {
     /// # See Also
     /// - EN_getcount (EPANET C API)
     /// - [`CountType`] for possible node types.
-    pub fn get_count(&mut self, count_type: CountType) -> Result<i32> {
+    pub fn get_count(&self, count_type: CountType) -> Result<i32> {
         let mut count: MaybeUninit<c_int> = MaybeUninit::uninit();
         let result = unsafe { ffi::EN_getcount(self.ph, count_type as i32, count.as_mut_ptr()) };
         if result == 0 {
@@ -52,7 +52,7 @@ impl EPANET {
         }
     }
 
-    pub fn get_title(&mut self) -> Result<String> {
+    pub fn get_title(&self) -> Result<String> {
         let mut out_line1: Vec<c_char> = vec![0; MAX_TITLE_SIZE as usize + 1usize];
         let mut out_line2: Vec<c_char> = vec![0; MAX_TITLE_SIZE as usize + 1usize];
         let mut out_line3: Vec<c_char> = vec![0; MAX_TITLE_SIZE as usize + 1usize];
@@ -81,7 +81,7 @@ impl EPANET {
 
     // todo: figure out why EN_gettag is not in the bindings
     /*
-    pub fn get_tag(&mut self, object_type: ObjectType, index: i32) -> Result<String> {
+    pub fn get_tag(&self, object_type: ObjectType, index: i32) -> Result<String> {
         let mut out_tag: Vec<c_char> = vec![0; MAX_MSG_SIZE as usize + 1usize];
         let result = unsafe { ffi::EN_gettag(self.ph, object_type as i32, index, out_tag.as_mut_ptr()) };
         if result == 0 {
@@ -97,12 +97,7 @@ impl EPANET {
     }
     */
 
-    pub fn set_title(
-        &mut self,
-        title_line1: &str,
-        title_line2: &str,
-        title_line3: &str,
-    ) -> Result<()> {
+    pub fn set_title(&self, title_line1: &str, title_line2: &str, title_line3: &str) -> Result<()> {
         let c_title1 = CString::new(title_line1).expect("Title contains null bytes");
         let c_title2 = CString::new(title_line2).expect("Title contains null bytes");
         let c_title3 = CString::new(title_line3).expect("Title contains null bytes");
@@ -120,11 +115,25 @@ impl EPANET {
         }
     }
 
-    pub fn run_project(&mut self, inp_file: &str, report_file: &str, out_file: &str, cb: Option<unsafe extern "C" fn(*mut ::std::os::raw::c_char)>) -> Result<()> {
+    pub fn run_project(
+        &self,
+        inp_file: &str,
+        report_file: &str,
+        out_file: &str,
+        cb: Option<unsafe extern "C" fn(*mut ::std::os::raw::c_char)>,
+    ) -> Result<()> {
         let inp_file_c = CString::new(inp_file).expect("inp_file contains null bytes");
         let report_file_c = CString::new(report_file).expect("report_file contains null bytes");
         let out_file_c = CString::new(out_file).expect("out_file contains null bytes");
-        let result = unsafe { ffi::EN_runproject(self.ph, inp_file_c.as_ptr(), report_file_c.as_ptr(), out_file_c.as_ptr(), cb) };
+        let result = unsafe {
+            ffi::EN_runproject(
+                self.ph,
+                inp_file_c.as_ptr(),
+                report_file_c.as_ptr(),
+                out_file_c.as_ptr(),
+                cb,
+            )
+        };
         if result == 0 {
             Ok(())
         } else {
@@ -132,7 +141,7 @@ impl EPANET {
         }
     }
 
-    pub fn save_inp_file(&mut self, file_name: &str) -> Result<()> {
+    pub fn save_inp_file(&self, file_name: &str) -> Result<()> {
         let inp_file_c = CString::new(file_name).expect("inp_file contains null bytes");
         let result = unsafe { ffi::EN_saveinpfile(self.ph, inp_file_c.as_ptr()) };
         if result == 0 {

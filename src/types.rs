@@ -1,5 +1,7 @@
 use crate::bindings::*;
 use enum_primitive::*;
+#[cfg(test)]
+use strum_macros::EnumIter;
 
 /// Max ID Size
 pub const MAX_ID_SIZE: EN_SizeLimits = EN_SizeLimits_EN_MAXID;
@@ -8,6 +10,27 @@ pub const MAX_MSG_SIZE: EN_SizeLimits = EN_SizeLimits_EN_MAXMSG;
 
 /// Max project title size. Taken from the EPANET C API source code.
 pub const MAX_TITLE_SIZE: EN_SizeLimits = 79;
+
+/// Quality of life struct used as the return object for [`time_to_next_event`] API
+pub struct Event {
+    pub event_type: TimestepEvent,
+    pub duration: u64,
+    pub element_index: i32,
+}
+
+pub struct QualityAnalysisInfo {
+    pub quality_type: QualityType,
+    pub chem_name: String,
+    pub chem_units: String,
+    pub trace_node_index: i32,
+}
+
+pub struct DemandModelInfo {
+    pub demand_type: DemandModel,
+    pub pressure_min: f64,
+    pub pressure_required: f64,
+    pub pressure_exponent: f64,
+}
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -97,6 +120,7 @@ pub enum CurveType {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(test, derive(EnumIter))]
 #[repr(u32)]
 pub enum TimeParameter {
     Duration = EN_TimeParameter_EN_DURATION, // Total simulation duration
@@ -275,6 +299,7 @@ pub enum DemandModel {
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(test, derive(EnumIter))]
 #[repr(u32)]
 pub enum Option {
     Trials = EN_Option_EN_TRIALS, // Maximum trials allowed for hydraulic convergence

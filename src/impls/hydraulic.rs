@@ -2,11 +2,11 @@
 //!
 //! This module contains methods for opening, initializing, running, stepping, saving, and closing hydraulic analyses.
 
-use std::mem::MaybeUninit;
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::EPANET;
 use crate::types::InitHydOption;
+use crate::EPANET;
+use std::mem::MaybeUninit;
 
 /// ## Hydraulic Analysis APIs
 impl EPANET {
@@ -32,7 +32,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_openH (EPANET C API)
-    pub fn open_h(&mut self) -> Result<()> {
+    pub fn open_h(&self) -> Result<()> {
         unsafe {
             match ffi::EN_openH(self.ph) {
                 0 => Ok(()),
@@ -68,7 +68,7 @@ impl EPANET {
     /// # See Also
     /// - EN_initH (EPANET C API)
     /// - [`InitHydOption`] for initialization options.
-    pub fn init_h(&mut self, init_flag: InitHydOption) -> Result<()> {
+    pub fn init_h(&self, init_flag: InitHydOption) -> Result<()> {
         unsafe {
             match ffi::EN_initH(self.ph, init_flag as i32) {
                 0 => Ok(()),
@@ -103,7 +103,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_usehydfile (EPANET C API)
-    pub fn use_hydraulics_file(&mut self, file_name: &str) -> Result<()> {
+    pub fn use_hydraulics_file(&self, file_name: &str) -> Result<()> {
         use std::ffi::CString;
 
         let c_file_name = CString::new(file_name).expect("file_name contains null bytes");
@@ -137,7 +137,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_solveH (EPANET C API)
-    pub fn solve_h(&mut self) -> Result<()> {
+    pub fn solve_h(&self) -> Result<()> {
         unsafe {
             match ffi::EN_solveH(self.ph) {
                 0 => Ok(()),
@@ -168,7 +168,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_runH (EPANET C API)
-    pub fn run_h(&mut self) -> Result<u64> {
+    pub fn run_h(&self) -> Result<u64> {
         let mut out_current_time = MaybeUninit::uninit();
         unsafe {
             match ffi::EN_runH(self.ph, out_current_time.as_mut_ptr()) {
@@ -200,7 +200,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_nextH (EPANET C API)
-    pub fn next_h(&mut self) -> Result<u64> {
+    pub fn next_h(&self) -> Result<u64> {
         let mut out_next_time = MaybeUninit::uninit();
         unsafe {
             match ffi::EN_nextH(self.ph, out_next_time.as_mut_ptr()) {
@@ -232,7 +232,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_saveH (EPANET C API)
-    pub fn save_h(&mut self) -> Result<()> {
+    pub fn save_h(&self) -> Result<()> {
         unsafe {
             match ffi::EN_saveH(self.ph) {
                 0 => Ok(()),
@@ -269,9 +269,10 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_savehydfile (EPANET C API)
-    pub fn save_hydraulics_file(&mut self, file_name: &str) -> Result<()> {
+    pub fn save_hydraulics_file(&self, file_name: &str) -> Result<()> {
         use std::ffi::CString;
 
+        // todo: Should this be a std::path::PathBuf?
         let c_file_name = CString::new(file_name).expect("file_name contains null bytes");
         unsafe {
             match ffi::EN_savehydfile(self.ph, c_file_name.as_ptr()) {
@@ -303,7 +304,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_closeH (EPANET C API)
-    pub fn close_h(&mut self) -> Result<()> {
+    pub fn close_h(&self) -> Result<()> {
         unsafe {
             match ffi::EN_closeH(self.ph) {
                 0 => Ok(()),
@@ -316,30 +317,18 @@ impl EPANET {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::{fixture, rstest};
-
-    #[fixture]
-    fn ph() -> EPANET {
-        EPANET::with_inp_file("EPANET/example-networks/Net1.inp", "", "").expect("ERROR OPENING PROJECT")
-    }
-
-    #[fixture]
-    fn after_step(mut ph: EPANET) -> EPANET {
-        // let t_stop = 10800;
-        let result = ph.solve_h();
-        assert!(result.is_ok());
-
-        ph
-    }
+    use crate::impls::test_utils::fixtures::*;
+    use rstest::rstest;
+    use std::fs;
 
     #[rstest]
-    fn test_solve_h(mut ph: EPANET) {
+    fn test_solve_h(ph: EPANET) {
         let result = ph.solve_h();
         assert_eq!(result, Ok(()));
     }
 
     #[rstest]
-    fn test_hyd_step(mut ph: EPANET) {
+    fn test_hyd_step(ph: EPANET) {
         let result = ph.open_h();
         assert_eq!(result, Ok(()));
 
@@ -363,14 +352,36 @@ mod tests {
     }
 
     #[rstest]
-    fn test_hydraulics_save(mut ph: EPANET){
+    fn test_hydraulics_save(ph: EPANET) {
         let mut result = ph.solve_h();
         assert_eq!(result, Ok(()));
 
         result = ph.save_h();
         assert_eq!(result, Ok(()));
 
-        // todo: implement report functionality
-        // ph.report();
+        let result = ph.report();
+        assert_eq!(result, Ok(()));
+    }
+
+    #[rstest]
+    fn test_hydraulics_save_file(ph: EPANET) {
+        let mut result = ph.solve_h();
+        assert_eq!(result, Ok(()));
+
+        let hyd_file = std::path::Path::new("test_savefile.hyd");
+        let _result = ph.save_hydraulics_file(hyd_file.to_str().unwrap());
+        assert!(
+            std::path::Path::new("test_savefile.hyd").exists(),
+            "Hydraulics file was not created successfully"
+        );
+
+        result = ph.use_hydraulics_file(hyd_file.to_str().unwrap());
+        assert_eq!(result, Ok(()));
+
+        result = ph.solve_q();
+        assert_eq!(result, Ok(()));
+
+        // Clean up the created file after the test
+        fs::remove_file(hyd_file).expect("Failed to remove the hydraulics file");
     }
 }

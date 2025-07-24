@@ -1,7 +1,7 @@
-use bindings as ffi;
-use std::ffi::{CString};
 use crate::types::{FlowUnits, HeadLossType};
+use bindings as ffi;
 use epanet_error::*;
+use std::ffi::CString;
 
 /// An EPANET Project wrapper
 pub struct EPANET {
@@ -9,7 +9,6 @@ pub struct EPANET {
 }
 
 impl EPANET {
-
     /// Creates a new EPANET project handle by calling the underlying C API.
     ///
     /// # Returns
@@ -21,7 +20,7 @@ impl EPANET {
     /// must be properly closed and deleted to avoid resource leaks.
     ///
     /// # Errors
-    /// Returns an `EPANETError` if the underlying C function fails.
+    /// Return an `EPANETError` if the underlying C function fails.
 
     fn create_project_handle() -> Result<ffi::EN_Project> {
         let mut ph: ffi::EN_Project = std::ptr::null_mut();
@@ -41,7 +40,12 @@ impl EPANET {
     ///
     /// # Errors
     /// Returns an `EPANETError` if the creation or opening of the project fails.
-    pub fn new(report_path: &str, out_path: &str, flow_units_type: FlowUnits, head_loss_type: HeadLossType) -> Result<Self> {
+    pub fn new(
+        report_path: &str,
+        out_path: &str,
+        flow_units_type: FlowUnits,
+        head_loss_type: HeadLossType,
+    ) -> Result<Self> {
         // Step 1: Initialize the project handle
         let ph = Self::create_project_handle()?;
 
@@ -50,7 +54,15 @@ impl EPANET {
         let out = CString::new(out_path).expect("out_path contains null bytes");
 
         // Step 3: Open the project
-        let result = unsafe { ffi::EN_init(ph, rpt.as_ptr(), out.as_ptr(), flow_units_type as i32, head_loss_type as i32) };
+        let result = unsafe {
+            ffi::EN_init(
+                ph,
+                rpt.as_ptr(),
+                out.as_ptr(),
+                flow_units_type as i32,
+                head_loss_type as i32,
+            )
+        };
         if result != 0 {
             unsafe { ffi::EN_deleteproject(ph) }; // Clean up on failure
             return Err(EPANETError::from(result));
@@ -80,7 +92,11 @@ impl EPANET {
         Ok(Self { ph })
     }
 
-    pub fn with_inp_file_allow_errors(inp_path: &str, report_path: &str, out_path: &str) -> Result<Self> {
+    pub fn with_inp_file_allow_errors(
+        inp_path: &str,
+        report_path: &str,
+        out_path: &str,
+    ) -> Result<Self> {
         // Step 1: Initialize the project handle
         let ph = Self::create_project_handle()?;
 
@@ -118,5 +134,6 @@ mod tests {}
 
 mod bindings;
 pub mod epanet_error;
+mod error_messages;
 pub mod impls;
 pub mod types;
