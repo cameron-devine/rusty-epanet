@@ -9,13 +9,13 @@ use std::{
 fn main() {
     let dst = Config::new("EPANET")
         .define("CMAKE_BUILD_TYPE", "Release")
-        .define("BUILD_SHARED_LIBS", "OFF")
         .build();
 
-    println!(
-        "cargo:rustc-link-search=native={}",
-        dst.join("lib").display()
-    );
+    println!("cargo:rustc-link-search=native={}/lib", dst.display());
+    println!("cargo:rustc-link-search=native={}/lib64", dst.display());
+    println!("cargo:rustc-link-search=native={}", dst.display());
+
+    // Link against epanet2
     println!("cargo:rustc-link-lib=dylib=epanet2");
 
     // The bindgen::Builder is the main entry point

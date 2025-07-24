@@ -14,5 +14,5 @@ strum = "0.27.2"
 strum_macros = "0.27.2"
 
 [build-dependencies]
-bindgen = "0.70.1"
-cmake = "0.1.51"
+bindgen = "0.72.0"
+cmake = "0.1.54"
