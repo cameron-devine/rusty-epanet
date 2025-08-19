@@ -1,4 +1,5 @@
-use crate::types::{FlowUnits, HeadLossType};
+pub mod types;
+use types::types::{FlowUnits, HeadLossType};
 use bindings as ffi;
 use epanet_error::*;
 use std::ffi::CString;
@@ -136,4 +137,3 @@ mod bindings;
 pub mod epanet_error;
 mod error_messages;
 pub mod impls;
-pub mod types;

@@ -3,7 +3,7 @@
 //! This module contains methods for setting and reading demand patterns.
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::{DemandModel, DemandModelInfo, MAX_ID_SIZE};
+use crate::types::types::{DemandModel, DemandModelInfo, MAX_ID_SIZE};
 use crate::EPANET;
 use enum_primitive::FromPrimitive;
 use std::ffi::{c_char, CString};
@@ -189,14 +189,13 @@ impl EPANET {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
     use super::*;
     use crate::impls::test_utils::fixtures::*;
     use rstest::rstest;
+    use std::fs;
 
     #[rstest]
     pub fn test_demands(ph: EPANET) {
-
         let mut result = ph.get_node_index("12");
         assert!(result.is_ok());
 
@@ -215,7 +214,7 @@ mod tests {
 
         drop(ph);
 
-        let new_ph = EPANET::with_inp_file("net1_dem_cat.inp","","").unwrap();
+        let new_ph = EPANET::with_inp_file("net1_dem_cat.inp", "", "").unwrap();
 
         let new_node_index_result = new_ph.get_node_index("12");
         assert!(new_node_index_result.is_ok());
@@ -230,5 +229,48 @@ mod tests {
         assert_eq!(new_demand_name, "CUB_SCOUT_MOTOR_POOL");
 
         fs::remove_file("net1_dem_cat.inp").expect("Failed to remove file");
+    }
+
+    #[rstest]
+    pub fn test_add_demand(ph_single_node: (EPANET, i32)) {
+        let (ph, node_qhut) = ph_single_node;
+
+        let mut result = ph.add_demand(node_qhut, 100.0, "PrimaryPattern", "PrimaryDemand");
+        println!("{:?}", result);
+        assert!(result.is_err());
+
+        result = ph.add_pattern("PrimaryPattern");
+        assert!(result.is_ok());
+
+        result = ph.add_demand(node_qhut, 100.0, "PrimaryPattern", "PrimaryDemand");
+        assert!(result.is_ok());
+
+        result = ph.add_pattern("SecondaryPattern");
+        assert!(result.is_ok());
+
+        result = ph.add_demand(node_qhut, 10.0, "SecondaryPattern", "SecondaryDemand");
+        assert!(result.is_ok());
+
+        result = ph.add_pattern("TertiaryPattern");
+        assert!(result.is_ok());
+
+        result = ph.add_demand(node_qhut, 1.0, "TertiaryPattern", "TertiaryDemand");
+        assert!(result.is_ok());
+
+        let count_result = ph.get_demand_count(node_qhut);
+        assert!(count_result.is_ok());
+        let count = count_result.unwrap();
+
+        let index_result = ph.get_demand_index(node_qhut, "TertiaryDemand");
+        assert!(index_result.is_ok());
+        let index = index_result.unwrap();
+        assert_eq!(index, count);
+
+        result = ph.delete_demand(node_qhut, index);
+        assert!(result.is_ok());
+
+        let count2_result = ph.get_demand_count(node_qhut);
+        assert!(count2_result.is_ok());
+        assert_eq!(count2_result.unwrap(), count - 1);
     }
 }

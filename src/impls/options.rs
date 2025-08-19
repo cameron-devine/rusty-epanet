@@ -4,7 +4,7 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::{
+use crate::types::types::{
     FlowUnits, Option, QualityAnalysisInfo, QualityType, TimeParameter, MAX_ID_SIZE,
 };
 use crate::EPANET;

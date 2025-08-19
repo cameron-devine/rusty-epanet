@@ -35,45 +35,6 @@ pub struct DemandModelInfo {
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(u32)]
-pub enum NodeProperty {
-    Elevation = EN_NodeProperty_EN_ELEVATION, // Elevation
-    BaseDemand = EN_NodeProperty_EN_BASEDEMAND, // Primary demand baseline value
-    Pattern = EN_NodeProperty_EN_PATTERN, // Primary demand time pattern index
-    Emitter = EN_NodeProperty_EN_EMITTER, // Emitter flow coefficient
-    InitQual = EN_NodeProperty_EN_INITQUAL, // Initial quality
-    SourceQual = EN_NodeProperty_EN_SOURCEQUAL, // Quality source strength
-    SourcePat = EN_NodeProperty_EN_SOURCEPAT, // Quality source pattern index
-    SourceType = EN_NodeProperty_EN_SOURCETYPE, // Quality source type
-    TankLevel = EN_NodeProperty_EN_TANKLEVEL, // Current computed tank water level (read only)
-    Demand = EN_NodeProperty_EN_DEMAND, // Current computed demand (read only)
-    Head = EN_NodeProperty_EN_HEAD, // Current computed hydraulic head (read only)
-    Pressure = EN_NodeProperty_EN_PRESSURE, // Current computed pressure (read only)
-    Quality = EN_NodeProperty_EN_QUALITY, // Current computed quality (read only)
-    SourceMass = EN_NodeProperty_EN_SOURCEMASS, // Current computed quality source mass inflow (read only)
-    InitVolume = EN_NodeProperty_EN_INITVOLUME, // Tank initial volume (read only)
-    MixModel = EN_NodeProperty_EN_MIXMODEL, // Tank mixing model
-    MixZoneVol = EN_NodeProperty_EN_MIXZONEVOL, // Tank mixing zone volume (read only)
-    TankDiam = EN_NodeProperty_EN_TANKDIAM, // Tank diameter
-    MinVolume = EN_NodeProperty_EN_MINVOLUME, // Tank minimum volume
-    VolCurve = EN_NodeProperty_EN_VOLCURVE, // Tank volume curve index
-    MinLevel = EN_NodeProperty_EN_MINLEVEL, // Tank minimum level
-    MaxLevel = EN_NodeProperty_EN_MAXLEVEL, // Tank maximum level
-    MixFraction = EN_NodeProperty_EN_MIXFRACTION, // Tank mixing fraction
-    TankKBulk = EN_NodeProperty_EN_TANK_KBULK, // Tank bulk decay coefficient
-    TankVolume = EN_NodeProperty_EN_TANKVOLUME, // Current computed tank volume (read only)
-    MaxVolume = EN_NodeProperty_EN_MAXVOLUME, // Tank maximum volume (read only)
-    CanOverflow = EN_NodeProperty_EN_CANOVERFLOW, // Tank can overflow (= 1) or not (= 0)
-    DemandDeficit = EN_NodeProperty_EN_DEMANDDEFICIT, // Amount that full demand is reduced under PDA (read only)
-    NodeInControl = EN_NodeProperty_EN_NODE_INCONTROL, // Is present in any simple or rule-based control (= 1) or not (= 0)
-    EmitterFlow = EN_NodeProperty_EN_EMITTERFLOW, // Current emitter flow (read only)
-    LeakageFlow = EN_NodeProperty_EN_LEAKAGEFLOW, // Current leakage flow (read only)
-    DemandFlow = EN_NodeProperty_EN_DEMANDFLOW, // Current consumer demand delivered (read only)
-    FullDemand = EN_NodeProperty_EN_FULLDEMAND, // Current consumer demand requested (read only)
-}}
-
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
 pub enum LinkProperty {
     Diameter = EN_LinkProperty_EN_DIAMETER, // Pipe/valve diameter
     Length = EN_LinkProperty_EN_LENGTH, // Pipe length
@@ -104,18 +65,6 @@ pub enum LinkProperty {
     LeakArea = EN_LinkProperty_EN_LEAK_AREA, // Pipe leak area (sq mm per 100 length units)
     LeakExpan = EN_LinkProperty_EN_LEAK_EXPAN, // Leak expansion rate (sq mm per unit of pressure head)
     LinkLeakage = EN_LinkProperty_EN_LINK_LEAKAGE, // Current leakage rate (read only)
-}}
-
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
-pub enum CurveType {
-    VolumeCurve = EN_CurveType_EN_VOLUME_CURVE, // Tank volume v. depth curve
-    PumpCurve = EN_CurveType_EN_PUMP_CURVE, // Pump head v. flow curve
-    EfficCurve = EN_CurveType_EN_EFFIC_CURVE, // Pump efficiency v. flow curve
-    HLossCurve = EN_CurveType_EN_HLOSS_CURVE, // Valve head loss v. flow curve
-    GenericCurve = EN_CurveType_EN_GENERIC_CURVE, // Generic curve
-    ValveCurve = EN_CurveType_EN_VALVE_CURVE, // Valve loss coeff. v. frac. open
 }}
 
 enum_from_primitive! {
@@ -189,15 +138,6 @@ pub enum CountType {
     CurveCount = EN_CountType_EN_CURVECOUNT, // Number of data curves
     ControlCount = EN_CountType_EN_CONTROLCOUNT, // Number of simple controls
     RuleCount = EN_CountType_EN_RULECOUNT, // Number of rule-based controls
-}}
-
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
-pub enum NodeType {
-    Junction = EN_NodeType_EN_JUNCTION, // Junction node
-    Reservoir = EN_NodeType_EN_RESERVOIR, // Reservoir node
-    Tank = EN_NodeType_EN_TANK, // Storage tank node
 }}
 
 enum_from_primitive! {
@@ -334,16 +274,6 @@ pub enum Option {
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(u32)]
-pub enum ControlType {
-    LowLevel = EN_ControlType_EN_LOWLEVEL, // Act when pressure or tank level drops below a setpoint
-    HiLevel = EN_ControlType_EN_HILEVEL, // Act when pressure or tank level rises above a setpoint
-    Timer = EN_ControlType_EN_TIMER, // Act at a prescribed elapsed amount of time
-    TimeOfDay = EN_ControlType_EN_TIMEOFDAY, // Act at a particular time of day
-}}
-
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
 pub enum StatisticType {
     Series = EN_StatisticType_EN_SERIES, // Report all time series points
     Average = EN_StatisticType_EN_AVERAGE, // Report average value over simulation period
@@ -397,57 +327,4 @@ pub enum StatusReport {
     NoReport = EN_StatusReport_EN_NO_REPORT, // No status reporting
     NormalReport = EN_StatusReport_EN_NORMAL_REPORT, // Normal level of status reporting
     FullReport = EN_StatusReport_EN_FULL_REPORT, // Full level of status reporting
-}}
-
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
-pub enum RuleObject {
-    Node = EN_RuleObject_EN_R_NODE, // Clause refers to a node
-    Link = EN_RuleObject_EN_R_LINK, // Clause refers to a link
-    System = EN_RuleObject_EN_R_SYSTEM, // Clause refers to a system parameter (e.g., time)
-}}
-
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
-pub enum RuleVariable {
-    Demand = EN_RuleVariable_EN_R_DEMAND, // Nodal demand
-    Head = EN_RuleVariable_EN_R_HEAD, // Nodal hydraulic head
-    Grade = EN_RuleVariable_EN_R_GRADE, // Nodal hydraulic grade
-    Level = EN_RuleVariable_EN_R_LEVEL, // Tank water level
-    Pressure = EN_RuleVariable_EN_R_PRESSURE, // Nodal pressure
-    Flow = EN_RuleVariable_EN_R_FLOW, // Link flow rate
-    Status = EN_RuleVariable_EN_R_STATUS, // Link status
-    Setting = EN_RuleVariable_EN_R_SETTING, // Link setting
-    Power = EN_RuleVariable_EN_R_POWER, // Pump power output
-    Time = EN_RuleVariable_EN_R_TIME, // Elapsed simulation time
-    ClockTime = EN_RuleVariable_EN_R_CLOCKTIME, // Time of day
-    FillTime = EN_RuleVariable_EN_R_FILLTIME, // Time to fill a tank
-    DrainTime = EN_RuleVariable_EN_R_DRAINTIME, // Time to drain a tank
-}}
-
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
-pub enum RuleOperator {
-    Eq = EN_RuleOperator_EN_R_EQ, // Equal to
-    Ne = EN_RuleOperator_EN_R_NE, // Not equal
-    Le = EN_RuleOperator_EN_R_LE, // Less than or equal to
-    Ge = EN_RuleOperator_EN_R_GE, // Greater than or equal to
-    Lt = EN_RuleOperator_EN_R_LT, // Less than
-    Gt = EN_RuleOperator_EN_R_GT, // Greater than
-    Is = EN_RuleOperator_EN_R_IS, // Is equal to
-    Not = EN_RuleOperator_EN_R_NOT, // Is not equal to
-    Below = EN_RuleOperator_EN_R_BELOW, // Is below
-    Above = EN_RuleOperator_EN_R_ABOVE, // Is above
-}}
-
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
-pub enum RuleStatus {
-    IsOpen = EN_RuleStatus_EN_R_IS_OPEN, // Link is open
-    IsClosed = EN_RuleStatus_EN_R_IS_CLOSED, // Link is closed
-    IsActive = EN_RuleStatus_EN_R_IS_ACTIVE, // Control valve is active
 }}

@@ -1,7 +1,7 @@
-use crate::types::{FlowUnits, HeadLossType, InitHydOption};
+use crate::types::node::NodeType::Junction;
+use crate::types::types::{FlowUnits, HeadLossType, InitHydOption};
 use crate::EPANET;
 use rstest::fixture;
-use crate::types::NodeType::Junction;
 
 pub fn approx_eq(a: f64, b: f64, tol: f64) -> bool {
     (a - b).abs() <= tol
@@ -45,10 +45,11 @@ pub fn after_step(ph: EPANET) -> EPANET {
 }
 
 #[fixture]
-pub fn ph_single_node(ph_close: EPANET) -> EPANET {
-    
+pub fn ph_single_node(ph_close: EPANET) -> (EPANET, i32) {
     let result = ph_close.add_node("CUB_SCOUT_QUONSET_HUT", Junction);
     assert!(result.is_ok());
-    
-    ph_close
+
+    let node_id = result.unwrap();
+
+    (ph_close, node_id)
 }

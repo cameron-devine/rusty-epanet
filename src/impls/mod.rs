@@ -1,8 +1,13 @@
-mod demand;
+pub mod control;
+pub mod curve;
+pub mod demand;
 pub mod hydraulic;
+pub mod link;
 pub mod node;
 pub mod options;
+pub mod pattern;
 pub mod project;
 pub mod quality;
 pub mod report;
-mod test_utils;
+pub mod rule;
+pub mod test_utils;

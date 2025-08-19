@@ -1,6 +1,6 @@
 use crate::epanet_error::*;
 use crate::ffi;
-use crate::types::{
+use crate::types::types::{
     AnalysisStatistic, Event, ObjectType, StatusReport, TimestepEvent, MAX_MSG_SIZE,
 };
 use crate::EPANET;

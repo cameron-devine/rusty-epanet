@@ -4,7 +4,7 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::InitHydOption;
+use crate::types::types::InitHydOption;
 use crate::EPANET;
 use std::mem::MaybeUninit;
 

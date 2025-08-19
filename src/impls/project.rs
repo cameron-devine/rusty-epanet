@@ -4,7 +4,7 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::{CountType, ObjectType, MAX_MSG_SIZE, MAX_TITLE_SIZE};
+use crate::types::types::{CountType, ObjectType, MAX_MSG_SIZE, MAX_TITLE_SIZE};
 use crate::EPANET;
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::mem::MaybeUninit;

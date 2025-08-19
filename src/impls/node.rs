@@ -4,14 +4,12 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types;
-use crate::types::CountType::NodeCount;
-use crate::types::{NodeProperty, MAX_MSG_SIZE};
+use crate::types::node::{NodeProperty, NodeType};
+use crate::types::types::{MAX_MSG_SIZE, ActionCodeType, CountType::NodeCount};
 use crate::EPANET;
 use enum_primitive::FromPrimitive;
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::mem::MaybeUninit;
-use types::{ActionCodeType, NodeType};
 
 /// ## Node APIs
 impl EPANET {
@@ -486,9 +484,9 @@ impl EPANET {
 mod tests {
     use super::*;
     use crate::impls::test_utils::fixtures::*;
-    use crate::types::ActionCodeType::Unconditional;
-    use crate::types::NodeProperty::*;
-    use crate::types::NodeType::{Junction, Reservoir, Tank};
+    use crate::types::types::ActionCodeType::Unconditional;
+    use crate::types::node::NodeProperty::*;
+    use crate::types::node::NodeType::{Junction, Reservoir, Tank};
     use rstest::rstest;
 
     #[rstest]
@@ -561,7 +559,7 @@ mod tests {
 
     #[rstest]
     fn node_tank_properties(ph: EPANET) {
-        use crate::types::NodeProperty::{
+        use crate::types::node::NodeProperty::{
             Elevation, MaxLevel, MinLevel, MinVolume, TankDiam, TankLevel,
         };
 

@@ -17,7 +17,7 @@ pub type Result<T> = std::result::Result<T, EPANETError>;
 ///                that caused it.
 #[derive(Debug, Clone)]
 pub struct EPANETError {
-    code: i32,
+    pub code: i32,
     message: &'static str,
     context: Option<String>,
 }
