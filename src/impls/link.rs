@@ -123,7 +123,7 @@ impl EPANET {
             Ok(count) => count,
             Err(e) => return Err(e),
         };
-        let mut values: Vec<f64> = Vec::with_capacity(link_count as usize);
+        let mut values: Vec<f64> = vec![0.0; link_count as usize];
         let result =
             unsafe { ffi::EN_getlinkvalues(self.ph, property as i32, values.as_mut_ptr()) };
         if result == 0 {
