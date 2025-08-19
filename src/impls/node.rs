@@ -372,7 +372,7 @@ impl EPANET {
             Ok(count) => count,
             Err(e) => return Err(e),
         };
-        let mut result: Vec<f64> = Vec::with_capacity(node_count as usize);
+        let mut result: Vec<f64> = vec![0.0; node_count as usize];
         unsafe {
             match ffi::EN_getnodevalues(self.ph, node_property as i32, result.as_mut_ptr()) {
                 0 => Ok(result),
