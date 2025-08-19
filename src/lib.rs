@@ -26,11 +26,8 @@ impl EPANET {
     fn create_project_handle() -> Result<ffi::EN_Project> {
         let mut ph: ffi::EN_Project = std::ptr::null_mut();
         let result = unsafe { ffi::EN_createproject(&mut ph) };
-        if result != 0 {
-            Err(EPANETError::from(result))
-        } else {
-            Ok(ph)
-        }
+        check_error(result)?;
+        Ok(ph)
     }
     /// Creates a new EPANET instance by reading an input file.
     ///
@@ -64,9 +61,9 @@ impl EPANET {
                 head_loss_type as i32,
             )
         };
-        if result != 0 {
+        if let Err(e) = check_error(result) {
             unsafe { ffi::EN_deleteproject(ph) }; // Clean up on failure
-            return Err(EPANETError::from(result));
+            return Err(e);
         }
 
         // Step 4: Return the EPANET instance
@@ -84,9 +81,9 @@ impl EPANET {
 
         // Step 3: Open the project
         let result = unsafe { ffi::EN_open(ph, inp.as_ptr(), rpt.as_ptr(), out.as_ptr()) };
-        if result != 0 {
+        if let Err(e) = check_error(result) {
             unsafe { ffi::EN_deleteproject(ph) }; // Clean up on failure
-            return Err(EPANETError::from(result));
+            return Err(e);
         }
 
         // Step 4: Return the EPANET instance
@@ -108,9 +105,9 @@ impl EPANET {
 
         // Step 3: Open the project
         let result = unsafe { ffi::EN_open(ph, inp.as_ptr(), rpt.as_ptr(), out.as_ptr()) };
-        if result != 0 {
+        if let Err(e) = check_error(result) {
             unsafe { ffi::EN_deleteproject(ph) }; // Clean up on failure
-            return Err(EPANETError::from(result));
+            return Err(e);
         }
 
         // Step 4: Return the EPANET instance
