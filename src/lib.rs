@@ -5,6 +5,7 @@ use epanet_error::*;
 use std::ffi::CString;
 
 /// An EPANET Project wrapper
+#[derive(Debug)]
 pub struct EPANET {
     ph: ffi::EN_Project,
 }
