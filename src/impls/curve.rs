@@ -3,7 +3,7 @@
 //! This module contains methods for getting and adding curves.
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::types::{MAX_ID_SIZE};
+use crate::types::types::MAX_ID_SIZE;
 use crate::types::curve::{Curve, CurveType};
 use crate::EPANET;
 use enum_primitive::FromPrimitive;
@@ -11,7 +11,7 @@ use enum_primitive::FromPrimitive;
 /// ## Curve APIs
 impl EPANET {
 
-    pub fn create_curve(&self, id: &str, curve_type: CurveType, points: &[(f64, f64)]) -> Result<Curve> {
+    pub fn create_curve(&self, id: &str, curve_type: CurveType, points: &[(f64, f64)]) -> Result<Curve<'_>> {
         self.add_curve(id)?;
 
         let index = self.get_curve_index(id)?;
@@ -19,6 +19,7 @@ impl EPANET {
         self.set_curve(index, points)?;
 
         Ok(Curve {
+            project: self,
             index,
             id: id.to_string(),
             curve_type,
@@ -26,12 +27,13 @@ impl EPANET {
         })
     }
 
-    pub fn get_curve_by_id(&self, id: &str) -> Result<Curve> {
+    pub fn get_curve_by_id(&self, id: &str) -> Result<Curve<'_>> {
         let index = self.get_curve_index(id)?;
         let curve_type = self.get_curve_type(index)?;
         let points = self.get_curve_points(index)?;
 
-        Ok(Curve{
+        Ok(Curve {
+            project: self,
             index,
             id: id.to_string(),
             curve_type,
@@ -39,11 +41,12 @@ impl EPANET {
         })
     }
 
-    pub fn get_curve_by_index(&self, index: i32) -> Result<Curve> {
+    pub fn get_curve_by_index(&self, index: i32) -> Result<Curve<'_>> {
         let id = self.get_curve_id(index)?;
         let curve_type = self.get_curve_type(index)?;
         let points = self.get_curve_points(index)?;
         Ok(Curve {
+            project: self,
             index,
             id,
             curve_type,
@@ -226,9 +229,9 @@ mod tests {
         let points = vec![(5.0, 6.0), (7.0, 8.0)];
         let mut curve = ph.create_curve(id, curve_type, &points).unwrap();
 
-        // Update curve
+        // Update curve and sync changes
         curve.points = vec![(9.0, 10.0), (11.0, 12.0)];
-        ph.update_curve(&curve).unwrap();
+        curve.update().unwrap();
 
         let updated = ph.get_curve_by_id(id).unwrap();
         assert_eq!(updated.points, curve.points);
@@ -241,7 +244,7 @@ mod tests {
         let points = vec![(13.0, 14.0)];
         let curve = ph.create_curve(id, curve_type, &points).unwrap();
 
-        ph.delete_curve(curve).unwrap();
+        curve.delete().unwrap();
         let result = ph.get_curve_by_id(id);
         assert!(result.is_err());
     }
