@@ -64,23 +64,39 @@ impl EPANET {
         self.delete_control_by_index(control.index)
     }
 
-    pub fn add_control(&self, mut control: Control<'_>) -> Result<Control<'_>> {
+    pub fn add_control(
+        &self,
+        control_type: ControlType,
+        link_index: i32,
+        setting: f64,
+        node_index: i32,
+        level: f64,
+        enabled: bool,
+    ) -> Result<Control<'_>> {
         let mut out_index = 0;
         check_error(unsafe {
             ffi::EN_addcontrol(
                 self.ph,
-                control.control_type as i32,
-                control.link_index,
-                control.setting,
-                control.node_index,
-                control.level,
+                control_type as i32,
+                link_index,
+                setting,
+                node_index,
+                level,
                 &mut out_index,
             )
         })?;
 
-        self.set_control_enabled(out_index, control.enabled)?;
-        control.index = out_index;
-        Ok(control)
+        self.set_control_enabled(out_index, enabled)?;
+        Ok(Control {
+            project: self,
+            index: out_index,
+            control_type,
+            link_index,
+            setting,
+            node_index,
+            level,
+            enabled,
+        })
     }
 
     fn delete_control_by_index(&self, index: i32) -> Result<()> {
@@ -114,18 +130,9 @@ mod tests {
         let link_index = ph.get_link_index("10").unwrap();
 
         // Create a timer control for the given link
-        let mut control = Control {
-            project: &ph,
-            index: 0,
-            control_type: ControlType::Timer,
-            link_index,
-            setting: 0.0,
-            node_index: 0,
-            level: 3600.0,
-            enabled: true,
-        };
-
-        let mut control = ph.add_control(control).unwrap();
+        let mut control = ph
+            .add_control(ControlType::Timer, link_index, 0.0, 0, 3600.0, true)
+            .unwrap();
         assert!(control.index() > 0);
 
         // Update the control's trigger level and disable it
