@@ -57,20 +57,19 @@ impl EPANET {
     pub fn add_node(&self, id: &str, node_type: NodeType) -> Result<i32> {
         let _id = CString::new(id).unwrap();
         let mut out_index = MaybeUninit::uninit();
-        unsafe {
-            match ffi::EN_addnode(
+        let code = unsafe {
+            ffi::EN_addnode(
                 self.ph,
                 _id.as_ptr(),
                 node_type as i32,
                 out_index.as_mut_ptr(),
-            ) {
-                0 => Ok(out_index.assume_init()),
-                x => Err(EPANETError::from(x).with_context(format!(
-                    "Failed to add node of type {:?} with id {}",
-                    node_type, id
-                ))),
-            }
-        }
+            )
+        };
+        check_error_with_context(
+            code,
+            format!("Failed to add node of type {:?} with id {}", node_type, id),
+        )?;
+        Ok(unsafe { out_index.assume_init() })
     }
 
     /// Deletes a node from the EPANET model.
@@ -113,15 +112,14 @@ impl EPANET {
     /// - `EN_deletenode` (EPANET C API)
     /// - [`ActionCodeType`] for possible adjustment actions when deleting a node.
     pub fn delete_node(&self, id: i32, action_code: ActionCodeType) -> Result<()> {
-        unsafe {
-            match ffi::EN_deletenode(self.ph, id, action_code as i32) {
-                0 => Ok(()),
-                x => Err(EPANETError::from(x).with_context(format!(
-                    "Failed to delete node with id {} with action code {:?}",
-                    id, action_code
-                ))),
-            }
-        }
+        let code = unsafe { ffi::EN_deletenode(self.ph, id, action_code as i32) };
+        check_error_with_context(
+            code,
+            format!(
+                "Failed to delete node with id {} with action code {:?}",
+                id, action_code
+            ),
+        )
     }
 
     /// Retrieves the index of a node in the EPANET model given its ID.
@@ -161,13 +159,12 @@ impl EPANET {
     pub fn get_node_index(&self, id: &str) -> Result<i32> {
         let _id = CString::new(id).unwrap();
         let mut out_index = MaybeUninit::uninit();
-        unsafe {
-            match ffi::EN_getnodeindex(self.ph, _id.as_ptr(), out_index.as_mut_ptr()) {
-                0 => Ok(out_index.assume_init()),
-                x => Err(EPANETError::from(x)
-                    .with_context(format!("Failed to get index for node with id {}", id))),
-            }
-        }
+        let code = unsafe { ffi::EN_getnodeindex(self.ph, _id.as_ptr(), out_index.as_mut_ptr()) };
+        check_error_with_context(
+            code,
+            format!("Failed to get index for node with id {}", id),
+        )?;
+        Ok(unsafe { out_index.assume_init() })
     }
 
     /// Retrieves the ID of a specific node in the EPANET model.
@@ -210,16 +207,12 @@ impl EPANET {
     /// - [`MAX_MSG_SIZE`] for the size limit used for node IDs.
     pub fn get_node_id(&self, index: i32) -> Result<String> {
         let mut out_id: Vec<c_char> = vec![0; MAX_MSG_SIZE as usize + 1usize];
-        unsafe {
-            match ffi::EN_getnodeid(self.ph, index, out_id.as_mut_ptr()) {
-                0 => Ok(CStr::from_ptr(out_id.as_ptr())
-                    .to_str()
-                    .unwrap()
-                    .to_string()),
-                x => Err(EPANETError::from(x)
-                    .with_context(format!("Failed to get node id for node at index {}", index))),
-            }
-        }
+        let code = unsafe { ffi::EN_getnodeid(self.ph, index, out_id.as_mut_ptr()) };
+        check_error_with_context(
+            code,
+            format!("Failed to get node id for node at index {}", index),
+        )?;
+        Ok(unsafe { CStr::from_ptr(out_id.as_ptr()) }.to_string_lossy().to_string())
     }
 
     /// Changes the ID of a specific node in the EPANET model.
@@ -262,15 +255,14 @@ impl EPANET {
     /// - EN_setnodeid (EPANET C API)
     pub fn set_node_id(&self, index: i32, node_id: &str) -> Result<()> {
         let _id = CString::new(node_id).unwrap();
-        unsafe {
-            match ffi::EN_setnodeid(self.ph, index, _id.as_ptr()) {
-                0 => Ok(()),
-                x => Err(EPANETError::from(x).with_context(format!(
-                    "Failed to set the id of {} for node at index {}",
-                    node_id, index
-                ))),
-            }
-        }
+        let code = unsafe { ffi::EN_setnodeid(self.ph, index, _id.as_ptr()) };
+        check_error_with_context(
+            code,
+            format!(
+                "Failed to set the id of {} for node at index {}",
+                node_id, index
+            ),
+        )
     }
 
     /// Retrieves the type of a specific node in the EPANET model.
@@ -310,18 +302,13 @@ impl EPANET {
     /// - [`NodeType`] for the list of possible node types returned by this function.
     pub fn get_node_type(&self, index: i32) -> Result<NodeType> {
         let mut node_type: MaybeUninit<c_int> = MaybeUninit::uninit();
-        unsafe {
-            match ffi::EN_getnodetype(self.ph, index, node_type.as_mut_ptr()) {
-                0 => {
-                    let init_node_type = node_type.assume_init();
-                    Ok(NodeType::from_i32(init_node_type).unwrap())
-                }
-                x => Err(EPANETError::from(x).with_context(format!(
-                    "Failed to get node type for node at index {}",
-                    index
-                ))),
-            }
-        }
+        let code = unsafe { ffi::EN_getnodetype(self.ph, index, node_type.as_mut_ptr()) };
+        check_error_with_context(
+            code,
+            format!("Failed to get node type for node at index {}", index),
+        )?;
+        let init_node_type = unsafe { node_type.assume_init() };
+        Ok(NodeType::from_i32(init_node_type).unwrap())
     }
 
     /// Retrieves the values of a specific property for all nodes in the EPANET model.
@@ -368,18 +355,13 @@ impl EPANET {
     /// - [`NodeProperty`] for the list of available properties that can be retrieved.
     /// - [`get_count`] for determining the total number of nodes.
     pub fn get_node_values(&self, node_property: NodeProperty) -> Result<Vec<f64>> {
-        let node_count = match self.get_count(NodeCount) {
-            Ok(count) => count,
-            Err(e) => return Err(e),
-        };
+        let node_count = self.get_count(NodeCount)?;
         let mut result: Vec<f64> = vec![0.0; node_count as usize];
-        unsafe {
-            match ffi::EN_getnodevalues(self.ph, node_property as i32, result.as_mut_ptr()) {
-                0 => Ok(result),
-                x => Err(EPANETError::from(x)
-                    .with_context(format!("Failed to get {:?} for all nodes", node_property))),
-            }
-        }
+        check_error_with_context(
+            unsafe { ffi::EN_getnodevalues(self.ph, node_property as i32, result.as_mut_ptr()) },
+            format!("Failed to get {:?} for all nodes", node_property),
+        )?;
+        Ok(result)
     }
 
     /// Retrieves the value of a specific property for a node in the EPANET model.
@@ -416,15 +398,14 @@ impl EPANET {
     /// - EN_getnodevalue (EPANET C API)
     pub fn get_node_value(&self, index: i32, node_property: NodeProperty) -> Result<f64> {
         let mut value: MaybeUninit<f64> = MaybeUninit::uninit();
-        unsafe {
-            match ffi::EN_getnodevalue(self.ph, index, node_property as i32, value.as_mut_ptr()) {
-                0 => Ok(value.assume_init()),
-                x => Err(EPANETError::from(x).with_context(format!(
-                    "Failed to get {:?} for node at index {}",
-                    node_property, index
-                ))),
-            }
-        }
+        check_error_with_context(
+            unsafe { ffi::EN_getnodevalue(self.ph, index, node_property as i32, value.as_mut_ptr()) },
+            format!(
+                "Failed to get {:?} for node at index {}",
+                node_property, index
+            ),
+        )?;
+        Ok(unsafe { value.assume_init() })
     }
 
     /// Sets the value of a specific property for a node in the EPANET model.
@@ -469,14 +450,11 @@ impl EPANET {
     ) -> Result<()> {
         // Convert `usize` to `i32` explicitly for FFI
         let index = index as i32;
-
-        match unsafe { ffi::EN_setnodevalue(self.ph, index, node_property as i32, value) } {
-            0 => Ok(()),
-            x => Err(EPANETError::from(x).with_context(format!(
-                "Failed to set {:?} for node at index {}",
-                node_property, index
-            ))),
-        }
+        let code = unsafe { ffi::EN_setnodevalue(self.ph, index, node_property as i32, value) };
+        check_error_with_context(
+            code,
+            format!("Failed to set {:?} for node at index {}", node_property, index),
+        )
     }
 }
 

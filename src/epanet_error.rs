@@ -60,3 +60,27 @@ impl From<i32> for EPANETError {
         }
     }
 }
+
+/// Convenience helper to convert an EPANET error code into a [`Result`].
+///
+/// The C API uses `0` to indicate success for nearly every function. This helper
+/// centralizes that check and translates non-zero codes into [`EPANETError`].
+pub(crate) fn check_error(code: i32) -> Result<()> {
+    if code == 0 {
+        Ok(())
+    } else {
+        Err(EPANETError::from(code))
+    }
+}
+
+/// Variant of [`check_error`] that attaches additional context to failures.
+pub(crate) fn check_error_with_context(
+    code: i32,
+    context: impl Into<String>,
+) -> Result<()> {
+    if code == 0 {
+        Ok(())
+    } else {
+        Err(EPANETError::from(code).with_context(context))
+    }
+}

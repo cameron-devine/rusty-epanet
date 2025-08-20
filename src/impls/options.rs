@@ -13,62 +13,35 @@ use std::ffi::{c_char, CString};
 
 /// ## Analysis Options APIs
 impl EPANET {
-    pub fn get_option(&self, option: Option) -> Result<f64> {
-        let mut value: f64 = 0.0;
-        let result = unsafe { ffi::EN_getoption(self.ph, option as i32, &mut value) };
-        if result == 0 {
+        pub fn get_option(&self, option: Option) -> Result<f64> {
+            let mut value: f64 = 0.0;
+            check_error(unsafe { ffi::EN_getoption(self.ph, option as i32, &mut value) })?;
             Ok(value)
-        } else {
-            Err(EPANETError::from(result))
         }
-    }
 
-    pub fn set_option(&self, option: Option, value: f64) -> Result<()> {
-        let result = unsafe { ffi::EN_setoption(self.ph, option as i32, value) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
+        pub fn set_option(&self, option: Option, value: f64) -> Result<()> {
+            check_error(unsafe { ffi::EN_setoption(self.ph, option as i32, value) })
         }
-    }
 
-    pub fn get_flow_units(&self) -> Result<FlowUnits> {
-        let mut flow_units = 0; // Default value
-        let result = unsafe { ffi::EN_getflowunits(self.ph, &mut flow_units) };
-        if result == 0 {
+        pub fn get_flow_units(&self) -> Result<FlowUnits> {
+            let mut flow_units = 0; // Default value
+            check_error(unsafe { ffi::EN_getflowunits(self.ph, &mut flow_units) })?;
             Ok(FlowUnits::from_i32(flow_units).unwrap())
-        } else {
-            Err(EPANETError::from(result))
         }
-    }
 
-    pub fn set_flow_units(&self, flow_units: FlowUnits) -> Result<()> {
-        let result = unsafe { ffi::EN_setflowunits(self.ph, flow_units as i32) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
+        pub fn set_flow_units(&self, flow_units: FlowUnits) -> Result<()> {
+            check_error(unsafe { ffi::EN_setflowunits(self.ph, flow_units as i32) })
         }
-    }
 
     pub fn get_time_parameter(&self, parameter: TimeParameter) -> Result<i64> {
         let mut value: i64 = 0;
-        let result = unsafe { ffi::EN_gettimeparam(self.ph, parameter as i32, &mut value) };
-        if result == 0 {
+            check_error(unsafe { ffi::EN_gettimeparam(self.ph, parameter as i32, &mut value) })?;
             Ok(value)
-        } else {
-            Err(EPANETError::from(result))
         }
-    }
 
     pub fn set_time_parameter(&self, parameter: TimeParameter, value: i64) -> Result<()> {
-        let result = unsafe { ffi::EN_settimeparam(self.ph, parameter as i32, value) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
+            check_error(unsafe { ffi::EN_settimeparam(self.ph, parameter as i32, value) })
         }
-    }
 
     pub fn get_quality_info(&self) -> Result<QualityAnalysisInfo> {
         let mut quality_type: i32 = 0;
@@ -86,9 +59,7 @@ impl EPANET {
             )
         };
 
-        if result != 0 {
-            return Err(EPANETError::from(result));
-        }
+        check_error(result)?;
 
         let quality_type =
             QualityType::from_i32(quality_type).ok_or_else(|| EPANETError::from(result))?;
@@ -121,11 +92,8 @@ impl EPANET {
 
         let result =
             unsafe { ffi::EN_getqualtype(self.ph, &mut quality_type, &mut trace_node_index) };
-        if result == 0 {
-            Ok(QualityType::from_i32(quality_type).unwrap())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(result)?;
+        Ok(QualityType::from_i32(quality_type).unwrap())
     }
 
     pub fn set_quality_type(
@@ -149,11 +117,7 @@ impl EPANET {
             )
         };
 
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(result)
     }
 }
 
