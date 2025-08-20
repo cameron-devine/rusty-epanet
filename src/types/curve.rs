@@ -1,13 +1,16 @@
-use crate::bindings::*;
+use crate::{bindings::*, EPANET};
 use enum_primitive::*;
 
 /// A struct representing a curve in an EPANET project.
-/// Use [`crate::EPANET::create_curve`] on the EPANET project
-/// to create a curve. If needing to modify a curve,
-/// ensure you call [`crate::EPANET::update_curve`] on the EPANET
-/// project after altering the curve internals.
+///
+/// Curves now hold a reference to their parent [`EPANET`] project so that
+/// changes can be synchronised back to the engine without having to invoke
+/// update functions on the project explicitly. Calling [`Curve::update`] will
+/// commit local field changes to EPANET.
 #[derive(Debug, Clone)]
-pub struct Curve {
+pub struct Curve<'a> {
+    /// Reference to the owning EPANET project
+    pub(crate) project: &'a EPANET,
     /// EPANET project index of the curve
     pub(crate) index: i32,
     /// Curve ID
@@ -18,10 +21,20 @@ pub struct Curve {
     pub points: Vec<(f64, f64)>,
 }
 
-impl Curve {
+impl<'a> Curve<'a> {
     /// Returns the EPANET project index of the curve
     pub fn index(&self) -> i32 {
         self.index
+    }
+
+    /// Synchronises any local changes of this curve back to the EPANET engine.
+    pub fn update(&self) -> crate::epanet_error::Result<()> {
+        self.project.update_curve(self)
+    }
+
+    /// Deletes this curve from the EPANET project.
+    pub fn delete(self) -> crate::epanet_error::Result<()> {
+        self.project.delete_curve(self)
     }
 }
 
