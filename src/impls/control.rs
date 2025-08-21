@@ -133,7 +133,8 @@ mod tests {
         let mut control = ph
             .add_control(ControlType::Timer, link_index, 0.0, 0, 3600.0, true)
             .unwrap();
-        assert!(control.index() > 0);
+        let control_index = control.index();
+        assert!(control_index > 0);
 
         // Update the control's trigger level and disable it
         control.level = 7200.0;
@@ -146,6 +147,6 @@ mod tests {
 
         // Finally delete the control
         control.delete().unwrap();
-        assert!(ph.get_control(control.index()).is_err());
+        assert!(ph.get_control(control_index).is_err());
     }
 }
