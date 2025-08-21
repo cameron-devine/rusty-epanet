@@ -1,5 +1,6 @@
+use crate::types::analysis::InitHydOption;
 use crate::types::node::NodeType::Junction;
-use crate::types::types::{FlowUnits, HeadLossType, InitHydOption};
+use crate::types::options::{FlowUnits, HeadLossType};
 use crate::EPANET;
 use rstest::fixture;
 

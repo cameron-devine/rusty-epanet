@@ -4,7 +4,7 @@
 
 use crate::epanet_error::*;
 use crate::ffi;
-use crate::types::types::InitHydOption;
+use crate::types::analysis::InitHydOption;
 use crate::EPANET;
 use std::mem::MaybeUninit;
 
@@ -231,7 +231,7 @@ impl EPANET {
 #[cfg(test)]
 mod tests {
     use crate::impls::test_utils::fixtures::*;
-    use crate::types::types::InitHydOption;
+    use crate::types::analysis::InitHydOption;
     use crate::EPANET;
     use rstest::rstest;
 

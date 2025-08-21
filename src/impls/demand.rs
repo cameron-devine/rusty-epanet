@@ -3,7 +3,8 @@
 //! This module contains methods for setting and reading demand patterns.
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::types::{DemandModel, DemandModelInfo, MAX_ID_SIZE};
+use crate::types::demand::*;
+use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
 use enum_primitive::FromPrimitive;
 use std::ffi::{c_char, CString};

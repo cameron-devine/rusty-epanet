@@ -1,10 +1,10 @@
-use crate::{bindings::{
-        EN_ControlType_EN_HILEVEL,
-        EN_ControlType_EN_LOWLEVEL,
-        EN_ControlType_EN_TIMEOFDAY,
+use crate::{
+    bindings::{
+        EN_ControlType_EN_HILEVEL, EN_ControlType_EN_LOWLEVEL, EN_ControlType_EN_TIMEOFDAY,
         EN_ControlType_EN_TIMER,
     },
-    EPANET};
+    EPANET,
+};
 use enum_primitive::*;
 
 /// A struct for holding simple control information.

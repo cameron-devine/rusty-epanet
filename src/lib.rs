@@ -1,8 +1,8 @@
 pub mod types;
-use types::types::{FlowUnits, HeadLossType};
 use bindings as ffi;
 use epanet_error::*;
 use std::ffi::CString;
+use types::options::{FlowUnits, HeadLossType};
 
 /// An EPANET Project wrapper
 #[derive(Debug)]

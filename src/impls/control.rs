@@ -9,7 +9,6 @@ use enum_primitive::FromPrimitive;
 
 /// ## Simple Control APIs
 impl EPANET {
-
     pub fn get_control(&self, index: i32) -> Result<Control<'_>> {
         let mut out_type = 0;
         let mut out_link_index = 0;
@@ -112,9 +111,7 @@ impl EPANET {
     }
 
     pub fn set_control_enabled(&self, control_index: i32, enabled: bool) -> Result<()> {
-        check_error(unsafe {
-            ffi::EN_setcontrolenabled(self.ph, control_index, enabled as i32)
-        })
+        check_error(unsafe { ffi::EN_setcontrolenabled(self.ph, control_index, enabled as i32) })
     }
 }
 

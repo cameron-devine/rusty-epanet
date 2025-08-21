@@ -4,8 +4,8 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::MAX_ID_SIZE;
 use crate::types::rule::*;
+use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
 use enum_primitive::*;
 use std::ffi::c_char;
@@ -226,8 +226,8 @@ impl EPANET {
 mod tests {
     use super::*;
     use crate::impls::test_utils::fixtures::*;
-    use crate::types::types::ActionCodeType::{Conditional, Unconditional};
-    use crate::types::types::CountType::RuleCount;
+    use crate::types::ActionCodeType::{Conditional, Unconditional};
+    use crate::types::CountType::RuleCount;
     use rstest::rstest;
 
     const R1: &str = "RULE 1 \n IF NODE 2 LEVEL < 100 \n THEN LINK 9 STATUS = OPEN";

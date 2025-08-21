@@ -5,7 +5,8 @@
 use crate::bindings as ffi;
 use crate::epanet_error::*;
 use crate::types::node::{NodeProperty, NodeType};
-use crate::types::types::{MAX_MSG_SIZE, ActionCodeType, CountType::NodeCount};
+use crate::types::MAX_MSG_SIZE;
+use crate::types::{ActionCodeType, CountType::NodeCount};
 use crate::EPANET;
 use enum_primitive::FromPrimitive;
 use std::ffi::{c_char, c_int, CStr, CString};
@@ -160,10 +161,7 @@ impl EPANET {
         let _id = CString::new(id).unwrap();
         let mut out_index = MaybeUninit::uninit();
         let code = unsafe { ffi::EN_getnodeindex(self.ph, _id.as_ptr(), out_index.as_mut_ptr()) };
-        check_error_with_context(
-            code,
-            format!("Failed to get index for node with id {}", id),
-        )?;
+        check_error_with_context(code, format!("Failed to get index for node with id {}", id))?;
         Ok(unsafe { out_index.assume_init() })
     }
 
@@ -212,7 +210,9 @@ impl EPANET {
             code,
             format!("Failed to get node id for node at index {}", index),
         )?;
-        Ok(unsafe { CStr::from_ptr(out_id.as_ptr()) }.to_string_lossy().to_string())
+        Ok(unsafe { CStr::from_ptr(out_id.as_ptr()) }
+            .to_string_lossy()
+            .to_string())
     }
 
     /// Changes the ID of a specific node in the EPANET model.
@@ -399,7 +399,9 @@ impl EPANET {
     pub fn get_node_value(&self, index: i32, node_property: NodeProperty) -> Result<f64> {
         let mut value: MaybeUninit<f64> = MaybeUninit::uninit();
         check_error_with_context(
-            unsafe { ffi::EN_getnodevalue(self.ph, index, node_property as i32, value.as_mut_ptr()) },
+            unsafe {
+                ffi::EN_getnodevalue(self.ph, index, node_property as i32, value.as_mut_ptr())
+            },
             format!(
                 "Failed to get {:?} for node at index {}",
                 node_property, index
@@ -453,7 +455,10 @@ impl EPANET {
         let code = unsafe { ffi::EN_setnodevalue(self.ph, index, node_property as i32, value) };
         check_error_with_context(
             code,
-            format!("Failed to set {:?} for node at index {}", node_property, index),
+            format!(
+                "Failed to set {:?} for node at index {}",
+                node_property, index
+            ),
         )
     }
 }
@@ -462,9 +467,9 @@ impl EPANET {
 mod tests {
     use super::*;
     use crate::impls::test_utils::fixtures::*;
-    use crate::types::types::ActionCodeType::Unconditional;
     use crate::types::node::NodeProperty::*;
     use crate::types::node::NodeType::{Junction, Reservoir, Tank};
+    use crate::types::ActionCodeType::Unconditional;
     use rstest::rstest;
 
     #[rstest]

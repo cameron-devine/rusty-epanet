@@ -1,8 +1,7 @@
 use crate::epanet_error::*;
 use crate::ffi;
-use crate::types::types::{
-    AnalysisStatistic, Event, ObjectType, StatusReport, TimestepEvent, MAX_MSG_SIZE,
-};
+use crate::types::options::{AnalysisStatistic, Event, StatusReport, TimestepEvent};
+use crate::types::{ObjectType, MAX_MSG_SIZE};
 use crate::EPANET;
 use enum_primitive::FromPrimitive;
 use std::ffi::{c_char, CStr, CString};

@@ -3,7 +3,7 @@
 //! This module contains APIs for adding and fetching patterns in EPANET.
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::types::MAX_ID_SIZE;
+use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
 use std::path::Path;
 
@@ -65,6 +65,8 @@ impl EPANET {
         let c_file_name = std::ffi::CString::new(file_name.to_str().unwrap()).unwrap();
         let c_id = std::ffi::CString::new(id).unwrap();
 
-        check_error(unsafe { ffi::EN_loadpatternfile(self.ph, c_file_name.as_ptr(), c_id.as_ptr()) })
+        check_error(unsafe {
+            ffi::EN_loadpatternfile(self.ph, c_file_name.as_ptr(), c_id.as_ptr())
+        })
     }
 }

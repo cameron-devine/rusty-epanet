@@ -4,44 +4,43 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::types::{
-    FlowUnits, Option, QualityAnalysisInfo, QualityType, TimeParameter, MAX_ID_SIZE,
-};
+use crate::types::options::{FlowUnits, Option, QualityAnalysisInfo, QualityType, TimeParameter};
+use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
 use enum_primitive::FromPrimitive;
 use std::ffi::{c_char, CString};
 
 /// ## Analysis Options APIs
 impl EPANET {
-        pub fn get_option(&self, option: Option) -> Result<f64> {
-            let mut value: f64 = 0.0;
-            check_error(unsafe { ffi::EN_getoption(self.ph, option as i32, &mut value) })?;
-            Ok(value)
-        }
+    pub fn get_option(&self, option: Option) -> Result<f64> {
+        let mut value: f64 = 0.0;
+        check_error(unsafe { ffi::EN_getoption(self.ph, option as i32, &mut value) })?;
+        Ok(value)
+    }
 
-        pub fn set_option(&self, option: Option, value: f64) -> Result<()> {
-            check_error(unsafe { ffi::EN_setoption(self.ph, option as i32, value) })
-        }
+    pub fn set_option(&self, option: Option, value: f64) -> Result<()> {
+        check_error(unsafe { ffi::EN_setoption(self.ph, option as i32, value) })
+    }
 
-        pub fn get_flow_units(&self) -> Result<FlowUnits> {
-            let mut flow_units = 0; // Default value
-            check_error(unsafe { ffi::EN_getflowunits(self.ph, &mut flow_units) })?;
-            Ok(FlowUnits::from_i32(flow_units).unwrap())
-        }
+    pub fn get_flow_units(&self) -> Result<FlowUnits> {
+        let mut flow_units = 0; // Default value
+        check_error(unsafe { ffi::EN_getflowunits(self.ph, &mut flow_units) })?;
+        Ok(FlowUnits::from_i32(flow_units).unwrap())
+    }
 
-        pub fn set_flow_units(&self, flow_units: FlowUnits) -> Result<()> {
-            check_error(unsafe { ffi::EN_setflowunits(self.ph, flow_units as i32) })
-        }
+    pub fn set_flow_units(&self, flow_units: FlowUnits) -> Result<()> {
+        check_error(unsafe { ffi::EN_setflowunits(self.ph, flow_units as i32) })
+    }
 
     pub fn get_time_parameter(&self, parameter: TimeParameter) -> Result<i64> {
         let mut value: i64 = 0;
-            check_error(unsafe { ffi::EN_gettimeparam(self.ph, parameter as i32, &mut value) })?;
-            Ok(value)
-        }
+        check_error(unsafe { ffi::EN_gettimeparam(self.ph, parameter as i32, &mut value) })?;
+        Ok(value)
+    }
 
     pub fn set_time_parameter(&self, parameter: TimeParameter, value: i64) -> Result<()> {
-            check_error(unsafe { ffi::EN_settimeparam(self.ph, parameter as i32, value) })
-        }
+        check_error(unsafe { ffi::EN_settimeparam(self.ph, parameter as i32, value) })
+    }
 
     pub fn get_quality_info(&self) -> Result<QualityAnalysisInfo> {
         let mut quality_type: i32 = 0;

@@ -4,6 +4,16 @@ use enum_primitive::*;
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(u32)]
+pub enum MixingModel {
+    Mix1 = EN_MixingModel_EN_MIX1, // Complete mix model
+    Mix2 = EN_MixingModel_EN_MIX2, // 2-compartment model
+    Fifo = EN_MixingModel_EN_FIFO, // First in, first out model
+    Lifo = EN_MixingModel_EN_LIFO, // Last in, first out model
+}}
+
+enum_from_primitive! {
+#[derive(Debug, Copy, Clone, PartialEq)]
+#[repr(u32)]
 pub enum NodeProperty {
     Elevation = EN_NodeProperty_EN_ELEVATION, // Elevation
     BaseDemand = EN_NodeProperty_EN_BASEDEMAND, // Primary demand baseline value
@@ -47,4 +57,14 @@ pub enum NodeType {
     Junction = EN_NodeType_EN_JUNCTION, // Junction node
     Reservoir = EN_NodeType_EN_RESERVOIR, // Reservoir node
     Tank = EN_NodeType_EN_TANK, // Storage tank node
+}}
+
+enum_from_primitive! {
+#[derive(Debug, Copy, Clone, PartialEq)]
+#[repr(u32)]
+pub enum SourceType {
+    Concen = EN_SourceType_EN_CONCEN, // Sets the concentration of external inflow entering a node
+    Mass = EN_SourceType_EN_MASS, // Injects a given mass/minute into a node
+    Setpoint = EN_SourceType_EN_SETPOINT, // Sets the concentration leaving a node to a given value
+    FlowPaced = EN_SourceType_EN_FLOWPACED, // Adds a given value to the concentration leaving a node
 }}

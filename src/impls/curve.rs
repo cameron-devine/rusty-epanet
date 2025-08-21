@@ -3,15 +3,19 @@
 //! This module contains methods for getting and adding curves.
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::types::MAX_ID_SIZE;
 use crate::types::curve::{Curve, CurveType};
+use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
 use enum_primitive::FromPrimitive;
 
 /// ## Curve APIs
 impl EPANET {
-
-    pub fn create_curve(&self, id: &str, curve_type: CurveType, points: &[(f64, f64)]) -> Result<Curve<'_>> {
+    pub fn create_curve(
+        &self,
+        id: &str,
+        curve_type: CurveType,
+        points: &[(f64, f64)],
+    ) -> Result<Curve<'_>> {
         self.add_curve(id)?;
 
         let index = self.get_curve_index(id)?;
@@ -201,8 +205,8 @@ impl EPANET {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::EPANET;
     use crate::impls::test_utils::fixtures::*;
+    use crate::EPANET;
     use rstest::*;
 
     #[rstest]

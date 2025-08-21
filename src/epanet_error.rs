@@ -74,10 +74,7 @@ pub(crate) fn check_error(code: i32) -> Result<()> {
 }
 
 /// Variant of [`check_error`] that attaches additional context to failures.
-pub(crate) fn check_error_with_context(
-    code: i32,
-    context: impl Into<String>,
-) -> Result<()> {
+pub(crate) fn check_error_with_context(code: i32, context: impl Into<String>) -> Result<()> {
     if code == 0 {
         Ok(())
     } else {

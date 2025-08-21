@@ -4,7 +4,9 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::types::{LinkProperty, LinkType, PumpType, MAX_ID_SIZE, CountType::LinkCount, ActionCodeType};
+use crate::types::link::*;
+use crate::types::MAX_ID_SIZE;
+use crate::types::{ActionCodeType, CountType::LinkCount};
 use crate::EPANET;
 use enum_primitive::FromPrimitive;
 use std::ffi::{c_char, CString};
