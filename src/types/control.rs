@@ -1,12 +1,23 @@
-use crate::bindings::{
-    EN_ControlType_EN_HILEVEL, EN_ControlType_EN_LOWLEVEL, EN_ControlType_EN_TIMEOFDAY,
-    EN_ControlType_EN_TIMER,
-};
+use crate::{bindings::{
+        EN_ControlType_EN_HILEVEL,
+        EN_ControlType_EN_LOWLEVEL,
+        EN_ControlType_EN_TIMEOFDAY,
+        EN_ControlType_EN_TIMER,
+    },
+    EPANET};
 use enum_primitive::*;
 
 /// A struct for holding simple control information.
+///
+/// `Control` instances hold a reference to their owning [`EPANET`] project so
+/// that modifications can be synchronised back to the engine in an RAII
+/// fashion. After mutating any of the public fields, call [`Control::update`]
+/// to commit those changes. The control can also be removed from the model by
+/// consuming it with [`Control::delete`].
 #[derive(Debug, Clone)]
-pub struct Control {
+pub struct Control<'a> {
+    /// Reference to the owning EPANET project.
+    pub(crate) project: &'a EPANET,
     /// EPANET project index of the control.
     pub(crate) index: i32,
     /// The control type. (see [`ControlType`])
@@ -24,10 +35,20 @@ pub struct Control {
     pub enabled: bool,
 }
 
-impl Control {
+impl<'a> Control<'a> {
     /// Returns the EPANET project index of the control.
     pub fn index(&self) -> i32 {
         self.index
+    }
+
+    /// Synchronises any local changes of this control back to the EPANET engine.
+    pub fn update(&self) -> crate::epanet_error::Result<()> {
+        self.project.update_control(self)
+    }
+
+    /// Deletes this control from the EPANET project.
+    pub fn delete(self) -> crate::epanet_error::Result<()> {
+        self.project.delete_control(self)
     }
 }
 
