@@ -1,5 +1,9 @@
 use crate::bindings::*;
+use crate::epanet_error::*;
+use crate::EPANET;
 use enum_primitive::*;
+
+use crate::types::ActionCodeType;
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -68,3 +72,249 @@ pub enum SourceType {
     Setpoint = EN_SourceType_EN_SETPOINT, // Sets the concentration leaving a node to a given value
     FlowPaced = EN_SourceType_EN_FLOWPACED, // Adds a given value to the concentration leaving a node
 }}
+
+/// A wrapper around an EPANET node index that deletes the node when dropped.
+/// Call [`Node::persist`] to keep the node in the project after relinquishing the
+/// Rust handle.
+///
+/// ```ignore
+/// use epanet::types::node::{NodeType, NodeKind, Node};
+/// # fn demo(ph: &epanet::EPANET) -> epanet::epanet_error::Result<()> {
+/// // Add a junction and access typed properties
+/// let node = Node::new(ph, "J1", NodeType::Junction)?;
+/// match node.kind() {
+///     NodeKind::Junction(j) => {
+///         let _demand = j.base_demand()?;
+///     }
+///     _ => unreachable!(),
+/// }
+/// // Persist the node in the EPANET model
+/// let index = Node::new(ph, "J2", NodeType::Junction)?.persist();
+/// let _handle = Node::from_index(&ph, index)?; // re-wrap later if needed
+/// # Ok(()) }
+/// ```
+pub struct Node<'a> {
+    pub(crate) handle: &'a EPANET,
+    pub index: i32,
+    pub id: String,
+    pub node_type: NodeType,
+    delete_on_drop: bool,
+}
+
+impl<'a> Drop for Node<'a> {
+    fn drop(&mut self) {
+        if self.delete_on_drop {
+            // Best effort cleanup; ignore errors on drop
+            unsafe {
+                EN_deletenode(
+                    self.handle.ph,
+                    self.index,
+                    ActionCodeType::Unconditional as i32,
+                );
+            }
+        }
+    }
+}
+
+impl<'a> Node<'a> {
+    /// Creates a new node and wraps it in [`Node`].
+    pub fn new(handle: &'a EPANET, id: &str, node_type: NodeType) -> Result<Self> {
+        let index = handle.add_node_raw(id, node_type)?;
+        Ok(Node {
+            handle,
+            index,
+            id: id.to_string(),
+            node_type,
+            delete_on_drop: true,
+        })
+    }
+
+    /// Creates a [`Node`] from an existing index.
+    pub fn from_index(handle: &'a EPANET, index: i32) -> Result<Self> {
+        let id = handle.get_node_id(index)?;
+        let node_type = handle.get_node_type(index)?;
+
+        Ok(Node {
+            handle,
+            index,
+            id,
+            node_type,
+            delete_on_drop: true,
+        })
+    }
+
+    /// Retrieves a property value for this node.
+    pub fn get_value(&self, property: NodeProperty) -> Result<f64> {
+        self.handle.get_node_value(self.index, property)
+    }
+
+    /// Sets a property value for this node.
+    pub fn set_value(&self, property: NodeProperty, value: f64) -> Result<()> {
+        self.handle
+            .set_node_value(self.index as usize, property, value)
+    }
+
+    /// Converts this node into a typed variant.
+    pub fn kind(self) -> NodeKind<'a> {
+        match self.node_type {
+            NodeType::Junction => NodeKind::Junction(Junction { node: self }),
+            NodeType::Reservoir => NodeKind::Reservoir(Reservoir { node: self }),
+            NodeType::Tank => NodeKind::Tank(Tank { node: self }),
+        }
+    }
+
+    /// Detach this node from its RAII guard, leaving it in the EPANET project.
+    /// Returns the index of the node which can later be wrapped again via
+    /// [`Node::from_index`].
+    pub fn persist(mut self) -> i32 {
+        self.delete_on_drop = false;
+        self.index
+    }
+}
+
+/// Typed representation of different kinds of nodes.
+pub enum NodeKind<'a> {
+    Junction(Junction<'a>),
+    Reservoir(Reservoir<'a>),
+    Tank(Tank<'a>),
+}
+
+/// Junction node wrapper.
+pub struct Junction<'a> {
+    pub node: Node<'a>,
+}
+
+impl<'a> Junction<'a> {
+    pub fn base_demand(&self) -> Result<f64> {
+        self.node.get_value(NodeProperty::BaseDemand)
+    }
+
+    pub fn set_base_demand(&self, value: f64) -> Result<()> {
+        self.node.set_value(NodeProperty::BaseDemand, value)
+    }
+}
+
+/// Reservoir node wrapper.
+pub struct Reservoir<'a> {
+    pub node: Node<'a>,
+}
+
+impl<'a> Reservoir<'a> {
+    pub fn elevation(&self) -> Result<f64> {
+        self.node.get_value(NodeProperty::Elevation)
+    }
+
+    pub fn set_elevation(&self, value: f64) -> Result<()> {
+        self.node.set_value(NodeProperty::Elevation, value)
+    }
+}
+
+/// Tank node wrapper.
+pub struct Tank<'a> {
+    pub node: Node<'a>,
+}
+
+impl<'a> Tank<'a> {
+    pub fn tank_level(&self) -> Result<f64> {
+        self.node.get_value(NodeProperty::TankLevel)
+    }
+
+    pub fn set_tank_level(&self, value: f64) -> Result<()> {
+        self.node.set_value(NodeProperty::TankLevel, value)
+    }
+}
+
+impl<'a> TryFrom<Node<'a>> for Junction<'a> {
+    type Error = Node<'a>;
+    fn try_from(node: Node<'a>) -> std::result::Result<Self, Self::Error> {
+        if node.node_type == NodeType::Junction {
+            Ok(Junction { node })
+        } else {
+            Err(node)
+        }
+    }
+}
+
+impl<'a> TryFrom<Node<'a>> for Reservoir<'a> {
+    type Error = Node<'a>;
+    fn try_from(node: Node<'a>) -> std::result::Result<Self, Self::Error> {
+        if node.node_type == NodeType::Reservoir {
+            Ok(Reservoir { node })
+        } else {
+            Err(node)
+        }
+    }
+}
+
+impl<'a> TryFrom<Node<'a>> for Tank<'a> {
+    type Error = Node<'a>;
+    fn try_from(node: Node<'a>) -> std::result::Result<Self, Self::Error> {
+        if node.node_type == NodeType::Tank {
+            Ok(Tank { node })
+        } else {
+            Err(node)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::impls::test_utils::fixtures::ph_close;
+    use crate::types::CountType;
+
+    #[test]
+    fn node_drop_deletes() {
+        let ph = ph_close();
+        let before = ph.get_count(CountType::NodeCount).unwrap();
+        {
+            let _n = Node::new(&ph, "TMP", NodeType::Junction).unwrap();
+            let during = ph.get_count(CountType::NodeCount).unwrap();
+            assert_eq!(during, before + 1);
+        }
+        let after = ph.get_count(CountType::NodeCount).unwrap();
+        assert_eq!(after, before);
+    }
+
+    #[test]
+    fn from_index_fetches_existing() {
+        let ph = ph_close();
+        let node = Node::new(&ph, "TMP", NodeType::Junction).unwrap();
+        let idx = node.index;
+        let idx = node.persist();
+        let fetched = Node::from_index(&ph, idx).unwrap();
+        assert_eq!(fetched.id, "TMP");
+        assert_eq!(fetched.node_type, NodeType::Junction);
+        drop(fetched);
+    }
+
+    #[test]
+    fn kind_returns_typed_variant() {
+        let ph = ph_close();
+        let node = Node::new(&ph, "TMP", NodeType::Junction).unwrap();
+        match node.kind() {
+            NodeKind::Junction(j) => {
+                let demand = j.base_demand().unwrap();
+                assert!(demand >= 0.0);
+            }
+            _ => panic!("expected junction"),
+        }
+    }
+
+    #[test]
+    fn persist_keeps_node() {
+        let ph = ph_close();
+        let before = ph.get_count(CountType::NodeCount).unwrap();
+        let index = {
+            let node = Node::new(&ph, "TMP", NodeType::Junction).unwrap();
+            node.persist()
+        };
+        let after = ph.get_count(CountType::NodeCount).unwrap();
+        assert_eq!(after, before + 1);
+        // cleanup
+        let n = Node::from_index(&ph, index).unwrap();
+        drop(n);
+        let final_count = ph.get_count(CountType::NodeCount).unwrap();
+        assert_eq!(final_count, before);
+    }
+}
