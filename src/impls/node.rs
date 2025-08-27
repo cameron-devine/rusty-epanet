@@ -310,11 +310,11 @@ impl EPANET {
     /// This thin wrapper delegates to the raw `EN_setnodevalue` FFI function.
     pub(crate) fn set_node_value(
         &self,
-        index: usize,
+        index: i32,
         node_property: NodeProperty,
         value: f64,
     ) -> Result<()> {
-        let index = index as i32;
+        let index = index;
         let code = unsafe { ffi::EN_setnodevalue(self.ph, index, node_property as i32, value) };
         check_error_with_context(
             code,

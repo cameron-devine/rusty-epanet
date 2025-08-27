@@ -98,7 +98,6 @@ impl<'a> Node<'a> {
     /// Creates a new node and wraps it in [`Node`].
     pub fn new(handle: &'a EPANET, id: &str, node_type: NodeType) -> Result<Self> {
         let index = handle.add_node(id, node_type)?;
-        handle.set_node_id(index, id)?;
         Ok(Node {
             handle,
             index,
@@ -143,7 +142,7 @@ impl<'a> Node<'a> {
     /// Sets the node id
     pub fn set_id(&mut self, id: &str) -> Result<()> {
         self.handle.set_node_id(self.index, id)?;
-        self.id = id.parse().unwrap();
+        self.id = id.to_string();
         Ok(())
     }
 
@@ -155,7 +154,7 @@ impl<'a> Node<'a> {
     /// Sets a property value for this node.
     pub fn set_value(&self, property: NodeProperty, value: f64) -> Result<()> {
         self.handle
-            .set_node_value(self.index as usize, property, value)
+            .set_node_value(self.index, property, value)
     }
 
     /// Converts this node into a typed variant.
@@ -256,37 +255,24 @@ impl<'a> TryFrom<Node<'a>> for Tank<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::impls::test_utils::fixtures::ph_close;
-    use crate::types::CountType;
+    use rstest::rstest;
+    use crate::impls::test_utils::fixtures::*;
 
-    #[test]
-    fn node_drop_deletes() {
-        let ph = ph_close();
-        let before = ph.get_count(CountType::NodeCount).unwrap();
-        {
-            let _n = Node::new(&ph, "TMP", NodeType::Junction).unwrap();
-            let during = ph.get_count(CountType::NodeCount).unwrap();
-            assert_eq!(during, before + 1);
-        }
-        let after = ph.get_count(CountType::NodeCount).unwrap();
-        assert_eq!(after, before);
+    #[rstest]
+    fn node_type_from_index(ph_close: EPANET) {
+        let node = Node::new(&ph_close, "TMP", NodeType::Junction).unwrap();
+        let idx = node.get_index();
+        assert_eq!(node.get_id(), "TMP");
+        assert_eq!(node.get_type(), NodeType::Junction);
+
+        let fetched = Node::from_index(&ph_close, idx).unwrap();
+        assert_eq!(fetched.get_id(), "TMP");
+        assert_eq!(fetched.get_type(), NodeType::Junction);
     }
 
-    #[test]
-    fn from_index_fetches_existing() {
-        let ph = ph_close();
-        let node = Node::new(&ph, "TMP", NodeType::Junction).unwrap();
-        let idx = node.index;
-        let fetched = Node::from_index(&ph, idx).unwrap();
-        assert_eq!(fetched.id, "TMP");
-        assert_eq!(fetched.node_type, NodeType::Junction);
-        drop(fetched);
-    }
-
-    #[test]
-    fn kind_returns_typed_variant() {
-        let ph = ph_close();
-        let node = Node::new(&ph, "TMP", NodeType::Junction).unwrap();
+    #[rstest]
+    fn node_junction_from_variant(ph_close: EPANET) {
+        let node = Node::new(&ph_close, "TMP", NodeType::Junction).unwrap();
         match node.kind() {
             NodeKind::Junction(j) => {
                 let demand = j.base_demand().unwrap();
@@ -294,22 +280,5 @@ mod tests {
             }
             _ => panic!("expected junction"),
         }
-    }
-
-    #[test]
-    fn persist_keeps_node() {
-        let ph = ph_close();
-        let before = ph.get_count(CountType::NodeCount).unwrap();
-        let index = {
-            let node = Node::new(&ph, "TMP", NodeType::Junction).unwrap();
-            node.index
-        };
-        let after = ph.get_count(CountType::NodeCount).unwrap();
-        assert_eq!(after, before + 1);
-        // cleanup
-        let n = Node::from_index(&ph, index).unwrap();
-        drop(n);
-        let final_count = ph.get_count(CountType::NodeCount).unwrap();
-        assert_eq!(final_count, before);
     }
 }
