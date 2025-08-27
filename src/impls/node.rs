@@ -16,7 +16,7 @@ use std::mem::MaybeUninit;
 impl EPANET {
     /// Thin wrapper around the raw `EN_addnode` FFI call returning the node index.
     pub fn add_node(&self, id: &str, node_type: NodeType) -> Result<i32> {
-        let _id = CString::new(id).unwrap();
+        let _id = CString::new(id)?;
         let mut out_index = MaybeUninit::uninit();
         let code = unsafe {
             ffi::EN_addnode(
@@ -124,7 +124,7 @@ impl EPANET {
     /// # See Also
     /// - EN_getnodeindex (EPANET C API)
     pub(crate) fn get_node_index(&self, id: &str) -> Result<i32> {
-        let _id = CString::new(id).unwrap();
+        let _id = CString::new(id)?;
         let mut out_index = MaybeUninit::uninit();
         let code = unsafe { ffi::EN_getnodeindex(self.ph, _id.as_ptr(), out_index.as_mut_ptr()) };
         check_error_with_context(code, format!("Failed to get index for node with id {}", id))?;
@@ -220,7 +220,7 @@ impl EPANET {
     /// # See Also
     /// - EN_setnodeid (EPANET C API)
     pub(crate) fn set_node_id(&self, index: i32, node_id: &str) -> Result<()> {
-        let _id = CString::new(node_id).unwrap();
+        let _id = CString::new(node_id)?;
         let code = unsafe { ffi::EN_setnodeid(self.ph, index, _id.as_ptr()) };
         check_error_with_context(
             code,

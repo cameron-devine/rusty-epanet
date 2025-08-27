@@ -1,5 +1,6 @@
 use crate::error_messages::get_error_message;
 use std::error::Error;
+use std::ffi::NulError;
 use std::fmt::{Display, Formatter};
 
 /// EPANET Result type with EPANET-specific errors
@@ -56,6 +57,20 @@ impl From<i32> for EPANETError {
         EPANETError {
             code: error,
             message: get_error_message(error),
+            context: None,
+        }
+    }
+}
+
+/// Convert a [`NulError`] produced when constructing a `CString`
+/// into an [`EPANETError`]. This represents invalid input provided
+/// by the caller rather than an error returned by the EPANET
+/// library itself.
+impl From<NulError> for EPANETError {
+    fn from(_: NulError) -> Self {
+        EPANETError {
+            code: -1,
+            message: "String contained interior NUL bytes",
             context: None,
         }
     }
