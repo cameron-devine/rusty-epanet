@@ -4,7 +4,7 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::node::{NodeProperty, NodeType};
+use crate::types::node::{Node, NodeProperty, NodeType};
 use crate::types::MAX_MSG_SIZE;
 use crate::types::{ActionCodeType, CountType::NodeCount};
 use crate::EPANET;
@@ -14,49 +14,9 @@ use std::mem::MaybeUninit;
 
 /// ## Node APIs
 impl EPANET {
-    /// Adds a new node to the EPANET model.
-    ///
-    /// This function creates and adds a new node to the EPANET model with the specified ID
-    /// and type. After the node is added, it returns the index of the newly created node in
-    /// the model.
-    ///
-    /// # Parameters
-    /// - `id`: The unique identifier for the new node. This should be a valid string and
-    ///   unique within the model.
-    /// - `node_type`: The type of the node, represented by the [`NodeType`] enum. The node
-    ///   type determines the functionality and behavior of the node (e.g., junction, reservoir).
-    ///
-    /// # Returns
-    /// A [`Result<i32>`] which:
-    /// - `Ok(i32)` contains the 1-based index of the newly created node in the model.
-    /// - `Err(EPANETError)` contains an error if the node addition fails, wrapping the error
-    ///   code and additional context about the operation.
-    ///
-    /// # Implementation Details
-    /// - Converts the `id` string into a `CString` to ensure compatibility with the C API.
-    /// - Calls the EPANET C API function EN_addnode to add the node and retrieve its index.
-    /// - Returns the index of the newly added node on success.
-    ///
-    /// # Safety
-    /// This function uses `unsafe` code to interface with the EPANET C API. While the caller
-    /// does not need to manage the safety of the FFI call, it assumes:
-    /// - The EPANET model is correctly initialized.
-    /// - The `id` string refers to a valid, unique node ID.
-    /// - The `node_type` is a valid enumeration value defined in [`NodeType`].
-    ///
-    /// # Errors
-    /// - Returns an [`EPANETError`] if the EPANET library fails to add the node. Common
-    ///   reasons include:
-    ///   - The `id` already exists in the model.
-    ///   - The `node_type` is invalid or not applicable.
-    /// - Includes additional context in the error message, specifying the node ID and type
-    ///   for debugging.
-    ///
-    /// # See Also
-    /// - EN_addnode (EPANET C API)
-    /// - [`NodeType`] for possible node types.
+    /// Thin wrapper around the raw `EN_addnode` FFI call returning the node index.
     pub fn add_node(&self, id: &str, node_type: NodeType) -> Result<i32> {
-        let _id = CString::new(id).unwrap();
+        let _id = CString::new(id)?;
         let mut out_index = MaybeUninit::uninit();
         let code = unsafe {
             ffi::EN_addnode(
@@ -71,6 +31,12 @@ impl EPANET {
             format!("Failed to add node of type {:?} with id {}", node_type, id),
         )?;
         Ok(unsafe { out_index.assume_init() })
+    }
+
+    /// Retrieves a [`Node`] by its identifier.
+    pub fn node(&self, id: &str) -> Result<Node<'_>> {
+        let index = self.get_node_index(id)?;
+        Node::from_index(self, index)
     }
 
     /// Deletes a node from the EPANET model.
@@ -112,7 +78,7 @@ impl EPANET {
     /// # See Also
     /// - `EN_deletenode` (EPANET C API)
     /// - [`ActionCodeType`] for possible adjustment actions when deleting a node.
-    pub fn delete_node(&self, id: i32, action_code: ActionCodeType) -> Result<()> {
+    pub(crate) fn delete_node(&self, id: i32, action_code: ActionCodeType) -> Result<()> {
         let code = unsafe { ffi::EN_deletenode(self.ph, id, action_code as i32) };
         check_error_with_context(
             code,
@@ -157,8 +123,8 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_getnodeindex (EPANET C API)
-    pub fn get_node_index(&self, id: &str) -> Result<i32> {
-        let _id = CString::new(id).unwrap();
+    pub(crate) fn get_node_index(&self, id: &str) -> Result<i32> {
+        let _id = CString::new(id)?;
         let mut out_index = MaybeUninit::uninit();
         let code = unsafe { ffi::EN_getnodeindex(self.ph, _id.as_ptr(), out_index.as_mut_ptr()) };
         check_error_with_context(code, format!("Failed to get index for node with id {}", id))?;
@@ -203,7 +169,7 @@ impl EPANET {
     /// # See Also
     /// - EN_getnodeid (EPANET C API)
     /// - [`MAX_MSG_SIZE`] for the size limit used for node IDs.
-    pub fn get_node_id(&self, index: i32) -> Result<String> {
+    pub(crate) fn get_node_id(&self, index: i32) -> Result<String> {
         let mut out_id: Vec<c_char> = vec![0; MAX_MSG_SIZE as usize + 1usize];
         let code = unsafe { ffi::EN_getnodeid(self.ph, index, out_id.as_mut_ptr()) };
         check_error_with_context(
@@ -253,8 +219,8 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_setnodeid (EPANET C API)
-    pub fn set_node_id(&self, index: i32, node_id: &str) -> Result<()> {
-        let _id = CString::new(node_id).unwrap();
+    pub(crate) fn set_node_id(&self, index: i32, node_id: &str) -> Result<()> {
+        let _id = CString::new(node_id)?;
         let code = unsafe { ffi::EN_setnodeid(self.ph, index, _id.as_ptr()) };
         check_error_with_context(
             code,
@@ -312,48 +278,6 @@ impl EPANET {
     }
 
     /// Retrieves the values of a specific property for all nodes in the EPANET model.
-    ///
-    /// This function fetches the values of a specified property for all nodes in the EPANET model
-    /// using the EPANET library. The property to retrieve is specified using the [`NodeProperty`]
-    /// enumeration, and the values are returned as a `Vec<f64>`.
-    ///
-    /// # Parameters
-    /// - `node_property`: The [`NodeProperty`] enumeration value specifying the property
-    ///   to retrieve for all nodes. For example, this could represent base demand,
-    ///   elevation, or pressure.
-    ///
-    /// # Returns
-    /// A [`Result<Vec<f64>>`] which:
-    /// - `Ok(Vec<f64>)` contains a vector of property values for all nodes, with each value
-    ///   corresponding to a node in the EPANET model.
-    /// - `Err(EPANETError)` if an error occurs while retrieving the values, wrapping the
-    ///   error code and additional context about the operation.
-    ///
-    /// # Implementation Details
-    /// - This function first determines the total number of nodes in the EPANET model by
-    ///   calling [`get_count`] with [`NodeCount`].
-    /// - It initializes a vector with the appropriate capacity to store the values for all
-    ///   nodes.
-    /// - Uses the `ffi::EN_getnodevalues` function to populate the vector with property
-    ///   values for all nodes.
-    ///
-    /// # Safety
-    /// This function uses `unsafe` code to interface with the EPANET C API. While the caller
-    /// does not need to worry about the safety of the FFI call itself, it assumes:
-    /// - The EPANET model is correctly initialized.
-    /// - The `node_property` is valid for the EPANET model.
-    ///
-    /// # Errors
-    /// - Returns an [`EPANETError`] if:
-    ///   - The number of nodes cannot be retrieved.
-    ///   - The EPANET library fails to retrieve the property values.
-    /// - Includes additional context in the error message, such as the specific property
-    ///   being retrieved.
-    ///
-    /// # See Also
-    /// - EN_getnodevalues (EPANET C API)
-    /// - [`NodeProperty`] for the list of available properties that can be retrieved.
-    /// - [`get_count`] for determining the total number of nodes.
     pub fn get_node_values(&self, node_property: NodeProperty) -> Result<Vec<f64>> {
         let node_count = self.get_count(NodeCount)?;
         let mut result: Vec<f64> = vec![0.0; node_count as usize];
@@ -364,40 +288,11 @@ impl EPANET {
         Ok(result)
     }
 
-    /// Retrieves the value of a specific property for a node in the EPANET model.
+    /// Retrieves the value of a specific property for a single node.
     ///
-    /// This function calls the EPANET library to fetch the value of a specified property
-    /// for a node identified by its index. The property to retrieve is specified using
-    /// the [`NodeProperty`] enumeration.
-    ///
-    /// # Parameters
-    /// - `index`: The index of the node for which the property value is to be retrieved.
-    ///   The index is 1-based and corresponds to the node in the EPANET model.
-    /// - `node_property`: The [`NodeProperty`] enumeration value specifying the property
-    ///   to retrieve. For example, this could represent the node's base demand or
-    ///   pressure.
-    ///
-    /// # Returns
-    /// A [`Result<f64>`] which:
-    /// - `Ok(f64)` contains the retrieved value of the specified node property.
-    /// - `Err(EPANETError)` if the EPANET library fails to set the property value, wrapping
-    ///   the error code and additional context about the operation
-    ///
-    /// # Safety
-    /// This function uses `unsafe` code to interface with the EPANET C API. The caller
-    /// does not need to worry about the safety of the FFI call itself, as this function
-    /// ensures proper error handling and type conversion. However, it assumes that the
-    /// EPANET model is correctly initialized and that the provided `index` and
-    /// `node_property` are valid.
-    ///
-    /// # Errors
-    /// - Returns an [`EPANETError`] if the EPANET library fails to retrieve the property value,
-    ///   for example, due to an invalid node index or property.
-    ///
-    /// # See Also
-    /// - EN_getnodevalue (EPANET C API)
-    pub fn get_node_value(&self, index: i32, node_property: NodeProperty) -> Result<f64> {
-        let mut value: MaybeUninit<f64> = MaybeUninit::uninit();
+    /// This thin wrapper delegates to the raw `EN_getnodevalue` FFI function.
+    pub(crate) fn get_node_value(&self, index: i32, node_property: NodeProperty) -> Result<f64> {
+        let mut value = MaybeUninit::<f64>::uninit();
         check_error_with_context(
             unsafe {
                 ffi::EN_getnodevalue(self.ph, index, node_property as i32, value.as_mut_ptr())
@@ -410,48 +305,16 @@ impl EPANET {
         Ok(unsafe { value.assume_init() })
     }
 
-    /// Sets the value of a specific property for a node in the EPANET model.
+    /// Sets the value of a specific property for a single node.
     ///
-    /// This function calls the EPANET library to set the value of a specified property
-    /// for a node identified by its index. The property to set is specified using the
-    /// [`NodeProperty`] enumeration, and the new value is provided as a `f64`.
-    ///
-    /// # Parameters
-    /// - `index`: The index of the node for which the property value is to be set.
-    ///   The index is 1-based and corresponds to the node in the EPANET model. This
-    ///   parameter is provided as a `usize` for ergonomic usage in Rust, but is converted
-    ///   to `i32` internally for the FFI call.
-    /// - `node_property`: The [`NodeProperty`] enumeration value specifying the property
-    ///   to set. For example, this could represent the node's base demand or elevation.
-    /// - `value`: The new value to assign to the specified node property.
-    ///
-    /// # Returns
-    /// A [`Result<()>`] which:
-    /// - `Ok(())` if the property value is successfully set.
-    /// - `Err(EPANETError)` if the EPANET library fails to set the property value, wrapping
-    ///   the error code and additional context about the operation.
-    ///
-    /// # Safety
-    /// This function uses `unsafe` code to interface with the EPANET C API. The caller does
-    /// not need to worry about the safety of the FFI call itself, as this function ensures
-    /// proper error handling and type conversion. However, it assumes that the EPANET model
-    /// is correctly initialized and that the provided `index` and `node_property` are valid.
-    ///
-    /// # Errors
-    /// - Returns an [`EPANETError`] if the EPANET library fails to set the property value.
-    /// - Additional context is provided in the error message, including the node index
-    ///   and property type, to aid in debugging.
-    ///
-    /// # See Also
-    /// - EN_setnodevalue (EPANET C API)
-    pub fn set_node_value(
+    /// This thin wrapper delegates to the raw `EN_setnodevalue` FFI function.
+    pub(crate) fn set_node_value(
         &self,
-        index: usize,
+        index: i32,
         node_property: NodeProperty,
         value: f64,
     ) -> Result<()> {
-        // Convert `usize` to `i32` explicitly for FFI
-        let index = index as i32;
+        let index = index;
         let code = unsafe { ffi::EN_setnodevalue(self.ph, index, node_property as i32, value) };
         check_error_with_context(
             code,

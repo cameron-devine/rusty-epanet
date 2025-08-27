@@ -1,4 +1,7 @@
 use crate::bindings::*;
+use crate::epanet_error::*;
+use crate::types::ActionCodeType::Unconditional;
+use crate::EPANET;
 use enum_primitive::*;
 
 enum_from_primitive! {
@@ -68,3 +71,214 @@ pub enum SourceType {
     Setpoint = EN_SourceType_EN_SETPOINT, // Sets the concentration leaving a node to a given value
     FlowPaced = EN_SourceType_EN_FLOWPACED, // Adds a given value to the concentration leaving a node
 }}
+
+/// A wrapper around an EPANET node index, type, and id.
+///
+/// ```ignore
+/// use epanet::types::node::{NodeType, NodeKind, Node};
+/// # fn demo(ph: &epanet::EPANET) -> epanet::epanet_error::Result<()> {
+/// // Add a junction and access typed properties
+/// let node = Node::new(ph, "J1", NodeType::Junction)?;
+/// match node.kind() {
+///     NodeKind::Junction(j) => {
+///         let _demand = j.base_demand()?;
+///     }
+///     _ => unreachable!(),
+/// }
+/// # Ok(()) }
+/// ```
+pub struct Node<'a> {
+    pub(crate) handle: &'a EPANET,
+    index: i32,
+    id: String,
+    node_type: NodeType,
+}
+
+impl<'a> Node<'a> {
+    /// Creates a new node and wraps it in [`Node`].
+    pub fn new(handle: &'a EPANET, id: &str, node_type: NodeType) -> Result<Self> {
+        let index = handle.add_node(id, node_type)?;
+        Ok(Node {
+            handle,
+            index,
+            id: id.to_string(),
+            node_type,
+        })
+    }
+
+    /// Deletes a [`Node`] from the project
+    pub fn delete(self) -> Result<()> {
+        self.handle.delete_node(self.index, Unconditional)
+    }
+
+    /// Creates a [`Node`] from an existing index.
+    pub fn from_index(handle: &'a EPANET, index: i32) -> Result<Self> {
+        let id = handle.get_node_id(index)?;
+        let node_type = handle.get_node_type(index)?;
+
+        Ok(Node {
+            handle,
+            index,
+            id,
+            node_type,
+        })
+    }
+
+    /// Get the index of the node
+    pub fn get_index(&self) -> i32 {
+        self.index
+    }
+    
+    /// Get the type of the node
+    pub fn get_type(&self) -> NodeType {
+        self.node_type
+    }
+
+    /// Gets the node id
+    pub fn get_id(&self) -> &str {
+        self.id.as_str()
+    }
+
+    /// Sets the node id
+    pub fn set_id(&mut self, id: &str) -> Result<()> {
+        self.handle.set_node_id(self.index, id)?;
+        self.id = id.to_string();
+        Ok(())
+    }
+
+    /// Retrieves a property value for this node.
+    pub fn get_value(&self, property: NodeProperty) -> Result<f64> {
+        self.handle.get_node_value(self.index, property)
+    }
+
+    /// Sets a property value for this node.
+    pub fn set_value(&self, property: NodeProperty, value: f64) -> Result<()> {
+        self.handle
+            .set_node_value(self.index, property, value)
+    }
+
+    /// Converts this node into a typed variant.
+    pub fn kind(self) -> NodeKind<'a> {
+        match self.node_type {
+            NodeType::Junction => NodeKind::Junction(Junction { node: self }),
+            NodeType::Reservoir => NodeKind::Reservoir(Reservoir { node: self }),
+            NodeType::Tank => NodeKind::Tank(Tank { node: self }),
+        }
+    }
+}
+
+/// Typed representation of different kinds of nodes.
+pub enum NodeKind<'a> {
+    Junction(Junction<'a>),
+    Reservoir(Reservoir<'a>),
+    Tank(Tank<'a>),
+}
+
+/// Junction node wrapper.
+pub struct Junction<'a> {
+    pub node: Node<'a>,
+}
+
+impl<'a> Junction<'a> {
+    pub fn base_demand(&self) -> Result<f64> {
+        self.node.get_value(NodeProperty::BaseDemand)
+    }
+
+    pub fn set_base_demand(&self, value: f64) -> Result<()> {
+        self.node.set_value(NodeProperty::BaseDemand, value)
+    }
+}
+
+/// Reservoir node wrapper.
+pub struct Reservoir<'a> {
+    pub node: Node<'a>,
+}
+
+impl<'a> Reservoir<'a> {
+    pub fn elevation(&self) -> Result<f64> {
+        self.node.get_value(NodeProperty::Elevation)
+    }
+
+    pub fn set_elevation(&self, value: f64) -> Result<()> {
+        self.node.set_value(NodeProperty::Elevation, value)
+    }
+}
+
+/// Tank node wrapper.
+pub struct Tank<'a> {
+    pub node: Node<'a>,
+}
+
+impl<'a> Tank<'a> {
+    pub fn tank_level(&self) -> Result<f64> {
+        self.node.get_value(NodeProperty::TankLevel)
+    }
+
+    pub fn set_tank_level(&self, value: f64) -> Result<()> {
+        self.node.set_value(NodeProperty::TankLevel, value)
+    }
+}
+
+impl<'a> TryFrom<Node<'a>> for Junction<'a> {
+    type Error = Node<'a>;
+    fn try_from(node: Node<'a>) -> std::result::Result<Self, Self::Error> {
+        if node.node_type == NodeType::Junction {
+            Ok(Junction { node })
+        } else {
+            Err(node)
+        }
+    }
+}
+
+impl<'a> TryFrom<Node<'a>> for Reservoir<'a> {
+    type Error = Node<'a>;
+    fn try_from(node: Node<'a>) -> std::result::Result<Self, Self::Error> {
+        if node.node_type == NodeType::Reservoir {
+            Ok(Reservoir { node })
+        } else {
+            Err(node)
+        }
+    }
+}
+
+impl<'a> TryFrom<Node<'a>> for Tank<'a> {
+    type Error = Node<'a>;
+    fn try_from(node: Node<'a>) -> std::result::Result<Self, Self::Error> {
+        if node.node_type == NodeType::Tank {
+            Ok(Tank { node })
+        } else {
+            Err(node)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+    use crate::impls::test_utils::fixtures::*;
+
+    #[rstest]
+    fn node_type_from_index(ph_close: EPANET) {
+        let node = Node::new(&ph_close, "TMP", NodeType::Junction).unwrap();
+        let idx = node.get_index();
+        assert_eq!(node.get_id(), "TMP");
+        assert_eq!(node.get_type(), NodeType::Junction);
+
+        let fetched = Node::from_index(&ph_close, idx).unwrap();
+        assert_eq!(fetched.get_id(), "TMP");
+        assert_eq!(fetched.get_type(), NodeType::Junction);
+    }
+
+    #[rstest]
+    fn node_junction_from_variant(ph_close: EPANET) {
+        let node = Node::new(&ph_close, "TMP", NodeType::Junction).unwrap();
+        match node.kind() {
+            NodeKind::Junction(j) => {
+                let demand = j.base_demand().unwrap();
+                assert!(demand >= 0.0);
+            }
+            _ => panic!("expected junction"),
+        }
+    }
+}

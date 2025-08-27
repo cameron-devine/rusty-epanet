@@ -47,10 +47,6 @@ pub fn after_step(ph: EPANET) -> EPANET {
 
 #[fixture]
 pub fn ph_single_node(ph_close: EPANET) -> (EPANET, i32) {
-    let result = ph_close.add_node("CUB_SCOUT_QUONSET_HUT", Junction);
-    assert!(result.is_ok());
-
-    let node_id = result.unwrap();
-
+    let node_id = ph_close.add_node("CUB_SCOUT_QUONSET_HUT", Junction).expect("Failed to add node");
     (ph_close, node_id)
 }
