@@ -1,9 +1,8 @@
 use crate::bindings::*;
 use crate::epanet_error::*;
+use crate::types::ActionCodeType::Unconditional;
 use crate::EPANET;
 use enum_primitive::*;
-
-use crate::types::ActionCodeType;
 
 enum_from_primitive! {
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -73,9 +72,7 @@ pub enum SourceType {
     FlowPaced = EN_SourceType_EN_FLOWPACED, // Adds a given value to the concentration leaving a node
 }}
 
-/// A wrapper around an EPANET node index that deletes the node when dropped.
-/// Call [`Node::persist`] to keep the node in the project after relinquishing the
-/// Rust handle.
+/// A wrapper around an EPANET node index, type, and id.
 ///
 /// ```ignore
 /// use epanet::types::node::{NodeType, NodeKind, Node};
@@ -88,45 +85,31 @@ pub enum SourceType {
 ///     }
 ///     _ => unreachable!(),
 /// }
-/// // Persist the node in the EPANET model
-/// let index = Node::new(ph, "J2", NodeType::Junction)?.persist();
-/// let _handle = Node::from_index(&ph, index)?; // re-wrap later if needed
 /// # Ok(()) }
 /// ```
 pub struct Node<'a> {
     pub(crate) handle: &'a EPANET,
-    pub index: i32,
-    pub id: String,
-    pub node_type: NodeType,
-    delete_on_drop: bool,
-}
-
-impl<'a> Drop for Node<'a> {
-    fn drop(&mut self) {
-        if self.delete_on_drop {
-            // Best effort cleanup; ignore errors on drop
-            unsafe {
-                EN_deletenode(
-                    self.handle.ph,
-                    self.index,
-                    ActionCodeType::Unconditional as i32,
-                );
-            }
-        }
-    }
+    index: i32,
+    id: String,
+    node_type: NodeType,
 }
 
 impl<'a> Node<'a> {
     /// Creates a new node and wraps it in [`Node`].
     pub fn new(handle: &'a EPANET, id: &str, node_type: NodeType) -> Result<Self> {
-        let index = handle.add_node_raw(id, node_type)?;
+        let index = handle.add_node(id, node_type)?;
+        handle.set_node_id(index, id)?;
         Ok(Node {
             handle,
             index,
             id: id.to_string(),
             node_type,
-            delete_on_drop: true,
         })
+    }
+
+    /// Deletes a [`Node`] from the project
+    pub fn delete(self) -> Result<()> {
+        self.handle.delete_node(self.index, Unconditional)
     }
 
     /// Creates a [`Node`] from an existing index.
@@ -139,8 +122,29 @@ impl<'a> Node<'a> {
             index,
             id,
             node_type,
-            delete_on_drop: true,
         })
+    }
+
+    /// Get the index of the node
+    pub fn get_index(&self) -> i32 {
+        self.index
+    }
+    
+    /// Get the type of the node
+    pub fn get_type(&self) -> NodeType {
+        self.node_type
+    }
+
+    /// Gets the node id
+    pub fn get_id(&self) -> &str {
+        self.id.as_str()
+    }
+
+    /// Sets the node id
+    pub fn set_id(&mut self, id: &str) -> Result<()> {
+        self.handle.set_node_id(self.index, id)?;
+        self.id = id.parse().unwrap();
+        Ok(())
     }
 
     /// Retrieves a property value for this node.
@@ -161,14 +165,6 @@ impl<'a> Node<'a> {
             NodeType::Reservoir => NodeKind::Reservoir(Reservoir { node: self }),
             NodeType::Tank => NodeKind::Tank(Tank { node: self }),
         }
-    }
-
-    /// Detach this node from its RAII guard, leaving it in the EPANET project.
-    /// Returns the index of the node which can later be wrapped again via
-    /// [`Node::from_index`].
-    pub fn persist(mut self) -> i32 {
-        self.delete_on_drop = false;
-        self.index
     }
 }
 
@@ -281,7 +277,6 @@ mod tests {
         let ph = ph_close();
         let node = Node::new(&ph, "TMP", NodeType::Junction).unwrap();
         let idx = node.index;
-        let idx = node.persist();
         let fetched = Node::from_index(&ph, idx).unwrap();
         assert_eq!(fetched.id, "TMP");
         assert_eq!(fetched.node_type, NodeType::Junction);
@@ -307,7 +302,7 @@ mod tests {
         let before = ph.get_count(CountType::NodeCount).unwrap();
         let index = {
             let node = Node::new(&ph, "TMP", NodeType::Junction).unwrap();
-            node.persist()
+            node.index
         };
         let after = ph.get_count(CountType::NodeCount).unwrap();
         assert_eq!(after, before + 1);

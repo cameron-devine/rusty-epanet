@@ -14,13 +14,8 @@ use std::mem::MaybeUninit;
 
 /// ## Node APIs
 impl EPANET {
-    /// Adds a new node to the EPANET model and returns a RAII guard.
-    pub fn add_node(&self, id: &str, node_type: NodeType) -> Result<Node<'_>> {
-        Node::new(self, id, node_type)
-    }
-
     /// Thin wrapper around the raw `EN_addnode` FFI call returning the node index.
-    pub(crate) fn add_node_raw(&self, id: &str, node_type: NodeType) -> Result<i32> {
+    pub fn add_node(&self, id: &str, node_type: NodeType) -> Result<i32> {
         let _id = CString::new(id).unwrap();
         let mut out_index = MaybeUninit::uninit();
         let code = unsafe {
@@ -271,7 +266,7 @@ impl EPANET {
     /// # See Also
     /// - EN_getnodetype (EPANET C API)
     /// - [`NodeType`] for the list of possible node types returned by this function.
-    pub(crate) fn get_node_type(&self, index: i32) -> Result<NodeType> {
+    pub fn get_node_type(&self, index: i32) -> Result<NodeType> {
         let mut node_type: MaybeUninit<c_int> = MaybeUninit::uninit();
         let code = unsafe { ffi::EN_getnodetype(self.ph, index, node_type.as_mut_ptr()) };
         check_error_with_context(
@@ -283,7 +278,7 @@ impl EPANET {
     }
 
     /// Retrieves the values of a specific property for all nodes in the EPANET model.
-    pub(crate) fn get_node_values(&self, node_property: NodeProperty) -> Result<Vec<f64>> {
+    pub fn get_node_values(&self, node_property: NodeProperty) -> Result<Vec<f64>> {
         let node_count = self.get_count(NodeCount)?;
         let mut result: Vec<f64> = vec![0.0; node_count as usize];
         check_error_with_context(
@@ -342,13 +337,13 @@ mod tests {
 
     #[rstest]
     fn add_delete_nodes(ph_close: EPANET) {
-        let result = ph_close.add_node_raw("N2", Junction);
+        let result = ph_close.add_node("N2", Junction);
         assert!(result.is_ok());
-        let result = ph_close.add_node_raw("N4", Tank);
+        let result = ph_close.add_node("N4", Tank);
         assert!(result.is_ok());
-        let result = ph_close.add_node_raw("N3", Reservoir);
+        let result = ph_close.add_node("N3", Reservoir);
         assert!(result.is_ok());
-        let result = ph_close.add_node_raw("N1", Junction);
+        let result = ph_close.add_node("N1", Junction);
         assert!(result.is_ok());
 
         let result = ph_close.get_node_index("N1");
@@ -372,21 +367,21 @@ mod tests {
     #[rstest]
     fn node_validate_id(ph: EPANET) {
         // Test adding a valid node ID
-        let result = ph.add_node_raw("N2", NodeType::Junction);
+        let result = ph.add_node("N2", NodeType::Junction);
         assert!(result.is_ok());
 
         // Test adding a node ID with invalid characters (space)
-        let result = ph.add_node_raw("N 3", NodeType::Junction);
+        let result = ph.add_node("N 3", NodeType::Junction);
         assert!(result.is_err());
         assert_eq!(result.err().unwrap(), EPANETError::from(252));
 
         // Test adding a node ID with invalid starting character (quote)
-        let result = ph.add_node_raw("\"N3", NodeType::Junction);
+        let result = ph.add_node("\"N3", NodeType::Junction);
         assert!(result.is_err());
         assert_eq!(result.err().unwrap(), EPANETError::from(252));
 
         // Test adding a node ID with invalid character (semicolon)
-        let result = ph.add_node_raw("N;3", NodeType::Junction);
+        let result = ph.add_node("N;3", NodeType::Junction);
         assert!(result.is_err());
         assert_eq!(result.err().unwrap(), EPANETError::from(252));
 

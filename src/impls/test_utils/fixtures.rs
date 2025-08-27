@@ -1,5 +1,4 @@
 use crate::types::analysis::InitHydOption;
-use crate::types::node::Node;
 use crate::types::node::NodeType::Junction;
 use crate::types::options::{FlowUnits, HeadLossType};
 use crate::EPANET;
@@ -48,9 +47,6 @@ pub fn after_step(ph: EPANET) -> EPANET {
 
 #[fixture]
 pub fn ph_single_node(ph_close: EPANET) -> (EPANET, i32) {
-    let node = Node::new(&ph_close, "CUB_SCOUT_QUONSET_HUT", Junction).expect("failed to add node");
-    let node_id = node.index;
-    // Prevent automatic deletion so that tests can use the node
-    std::mem::forget(node);
+    let node_id = ph_close.add_node("CUB_SCOUT_QUONSET_HUT", Junction).expect("Failed to add node");
     (ph_close, node_id)
 }
