@@ -51,73 +51,102 @@ Functions available in `bindings.rs` but not yet wrapped with safe Rust methods.
 - [ ] `EN_setstatusreport` - Set level of hydraulic status reporting
 - [ ] `EN_timetonextevent` - Get time until next event (exists in bindings, not wrapped)
 
-## Incomplete Typestate / Trait Patterns
+## Typestate Solvers
 
-### HydraulicSolver (types/analysis.rs)
+The solvers should **borrow** `&'a EPANET` (not own it), so the project remains accessible for reading results mid-simulation via domain structs. The current `HydraulicSolver` owns the project and needs to be rewritten.
 
-The typestate pattern is structurally defined but not wired to the C API.
+### HydraulicSolver (rewrite types/analysis.rs)
 
-- [ ] Wire `HydraulicSolver<Closed>::solve()` to actually call `EN_solveH`
-- [ ] Wire `HydraulicSolver<Closed>::init()` to call `EN_openH` + `EN_initH`
-- [ ] Add `HydraulicSolver<Initialized>::run()` -> `HydraulicSolver<Running>` calling `EN_runH`
-- [ ] Add `HydraulicSolver<Running>::next()` -> `HydraulicSolver<Running>` or terminal, calling `EN_nextH`
-- [ ] Wire `HydraulicSolver<Solved>::save()` to call `EN_saveH`
-- [ ] Wire `HydraulicSolver<Solved>::close()` to call `EN_closeH`
-- [ ] Return `Result<>` from all state transitions (currently infallible)
-- [ ] Implement `Drop` for HydraulicSolver to call `EN_closeH` if not already closed
-- [ ] Decide ownership model: solver currently takes ownership of `EPANET` (`pub ph: EPANET`) - should it borrow instead?
+- [ ] Change `HydraulicSolver` from owning `pub ph: EPANET` to borrowing `&'a EPANET`
+- [ ] Add `EPANET::hydraulic_solver(&self) -> HydraulicSolver<'_, Closed>` entry point
+- [ ] Wire `Closed::solve()` -> `Solved` via `EN_solveH` (return `Result`)
+- [ ] Wire `Closed::init(InitHydOption)` -> `Initialized` via `EN_openH` + `EN_initH` (return `Result`)
+- [ ] Add `Initialized::run()` -> `(Running, f64)` via `EN_runH` (returns current time)
+- [ ] Add `Running::next()` -> `Result<StepResult>` via `EN_nextH` + `EN_runH`
+- [ ] Define `StepResult<'a>` enum: `Continue(HydraulicSolver<Running>)` | `Done(HydraulicSolver<Solved>)` to encode simulation completion in the type system
+- [ ] Wire `Solved::save()` via `EN_saveH`
+- [ ] Wire `Solved::close()` via `EN_closeH`
+- [ ] Add `project(&self) -> &EPANET` accessor on `Running` and `Solved` states for reading results mid-simulation
+- [ ] Implement `Drop` for all states to call `EN_closeH` as safety net
+- [ ] All state transitions return `Result<>`
 
-### QualitySolver (not started)
+### QualitySolver (new, same pattern)
 
-A matching typestate pattern for the water quality solver.
-
-- [ ] Define `QualitySolver` with states: `Closed`, `Initialized`, `Running`, `Solved`
-- [ ] `Closed::init()` -> `Initialized` via `EN_openQ` + `EN_initQ`
+- [ ] Define `QualitySolver<'a, State>` borrowing `&'a EPANET` with states: `Closed`, `Initialized`, `Running`, `Solved`
+- [ ] Add `EPANET::quality_solver(&self) -> QualitySolver<'_, Closed>` entry point
 - [ ] `Closed::solve()` -> `Solved` via `EN_solveQ`
+- [ ] `Closed::init()` -> `Initialized` via `EN_openQ` + `EN_initQ`
 - [ ] `Initialized::run()` -> `Running` via `EN_runQ`
-- [ ] `Running::next()` / `Running::step()` via `EN_nextQ` / `EN_stepQ`
-- [ ] `Solved::close()` -> `Closed` via `EN_closeQ`
+- [ ] `Running::next()` -> `StepResult` via `EN_nextQ` (or `EN_stepQ`)
+- [ ] `Solved::close()` -> drop via `EN_closeQ`
+- [ ] `Drop` impl calls `EN_closeQ`
 
 ## Domain Structs
 
-Currently, nodes and links are accessed purely through index-based C function calls. A more Rust-idiomatic approach would use structs similar to `Control<'a>` and `Curve<'a>`.
+Structs are **views** into the C engine state, not owners of data. Use enum-based type discrimination (not composition/inheritance). This replaces the current `Control<'a>` / `Curve<'a>` composition pattern.
 
-### Node Structs
+### Design principles
+- One struct per domain concept (`Node<'a>`, `Link<'a>`) with a `kind` enum for type-specific data
+- Type-specific fields live in plain data structs (`PipeData`, `PumpData`, etc.) inside the enum
+- Shared behavior (live result queries, `update()`, `delete()`) lives on the outer struct
+- Convenience accessors: `as_pipe()`, `as_pump()`, `is_pipe()`, etc. return `Option<&Data>`
+- `update()` pushes cached fields back to C; live results (`flow()`, `pressure()`) always query C directly
 
-- [ ] `Node<'a>` base struct with `&'a EPANET`, index, ID, and NodeType
-- [ ] `Junction<'a>` - wraps Node with junction-specific fields (elevation, base demand, demand pattern, emitter coeff)
-- [ ] `Tank<'a>` - wraps Node with tank-specific fields (init level, min/max level, diameter, min volume, volume curve)
-- [ ] `Reservoir<'a>` - wraps Node with reservoir-specific fields (head, head pattern)
-- [ ] `.update()` and `.delete(self)` methods matching the Control/Curve RAII pattern
-- [ ] Builder or constructor that calls `EN_setjuncdata` / `EN_settankdata` for efficient initialization
+### Node
 
-### Link Structs
+- [ ] `Node<'a>` struct: `&'a EPANET`, index, id, `kind: NodeKind`
+- [ ] `NodeKind` enum: `Junction(JunctionData)`, `Tank(TankData)`, `Reservoir(ReservoirData)`
+- [ ] `JunctionData`: elevation, base_demand, demand_pattern, emitter_coeff, init_quality
+- [ ] `TankData`: elevation, init_level, min_level, max_level, diameter, min_volume, volume_curve
+- [ ] `ReservoirData`: total_head, head_pattern, init_quality
+- [ ] `Node::update()` - pushes cached fields back to C via `EN_setnodevalue` / `EN_setjuncdata` / `EN_settankdata`
+- [ ] `Node::delete(self, ActionCodeType)` - consuming delete via `EN_deletenode`
+- [ ] Live result methods: `pressure()`, `head()`, `demand()`, `quality()` - always query C
+- [ ] Convenience: `as_junction()`, `as_tank()`, `as_reservoir()`, `is_junction()`, etc.
+- [ ] `EPANET::get_node_by_index(i32) -> Result<Node>` constructor (fetches all fields from C)
+- [ ] `EPANET::get_node(id: &str) -> Result<Node>` constructor (resolves ID first)
 
-- [ ] `Link<'a>` base struct with `&'a EPANET`, index, ID, LinkType, and upstream/downstream node indices
-- [ ] `Pipe<'a>` - wraps Link with pipe fields (length, diameter, roughness, minor loss, status)
-- [ ] `Pump<'a>` - wraps Link with pump fields (pump type, head curve, speed, power, energy pattern)
-- [ ] Valve subtypes (`PRV<'a>`, `PSV<'a>`, `PBV<'a>`, `FCV<'a>`, `TCV<'a>`, `GPV<'a>`) with valve-specific settings
-- [ ] `.update()` and `.delete(self)` methods matching Control/Curve RAII pattern
-- [ ] `EN_addlink` wrapper for constructors
+### Link
 
-### Pattern Struct
+- [ ] `Link<'a>` struct: `&'a EPANET`, index, id, from_node, to_node, status, `kind: LinkKind`
+- [ ] `LinkKind` enum: `Pipe(PipeData)`, `CvPipe(PipeData)`, `Pump(PumpData)`, `Valve(ValveData)`
+- [ ] `PipeData`: length, diameter, roughness, minor_loss
+- [ ] `PumpData`: pump_type, power, speed, head_curve_index, efficiency_curve_index, energy_pattern_index, energy_cost
+- [ ] `ValveData`: valve_type (`ValveType` enum: Prv/Psv/Pbv/Fcv/Tcv/Gpv/Pcv), diameter, setting, curve_index
+- [ ] `Link::update()` - dispatches on `kind` to call `EN_setpipedata` / `EN_setlinkvalue` etc.
+- [ ] `Link::delete(self, ActionCodeType)` - consuming delete via `EN_deletelink`
+- [ ] Live result methods: `flow()`, `velocity()`, `head_loss()`, `quality()`
+- [ ] Convenience: `as_pipe()`, `as_pipe_mut()`, `as_pump()`, `as_pump_mut()`, `as_valve()`, `is_pipe()`, etc.
+- [ ] `EPANET::get_link_by_index(i32) -> Result<Link>` constructor
+- [ ] `EPANET::get_link(id: &str) -> Result<Link>` constructor
 
-- [ ] `Pattern<'a>` - wraps EPANET ref + index + ID + cached multipliers
-- [ ] `.update()` / `.delete(self)` RAII methods
+### Refactor Control and Curve to match
 
-### Demand Struct
+- [ ] Refactor `Control<'a>` to use the same pattern (struct owns data, `update()`/`delete(self)` call FFI directly instead of delegating to `project.update_control()`)
+- [ ] Refactor `Curve<'a>` to match
 
-- [ ] `Demand<'a>` - wraps node ref + demand category index + base demand + pattern + name
+### Pattern
 
-## Iterator / Collection Support
+- [ ] `Pattern<'a>` struct: `&'a EPANET`, index, id, cached multipliers
+- [ ] `update()` / `delete(self)` methods
 
-- [ ] `NodeIterator` - iterate over all nodes yielding `Node<'a>` (or typed variants)
-- [ ] `LinkIterator` - iterate over all links yielding `Link<'a>` (or typed variants)
-- [ ] `PatternIterator` - iterate over patterns
-- [ ] `CurveIterator` - iterate over curves
-- [ ] `ControlIterator` - iterate over controls
-- [ ] `RuleIterator` - iterate over rules
-- [ ] Consider `IntoIterator` impls on `EPANET` for ergonomic `for node in &project.nodes()` patterns
+### Demand
+
+- [ ] `Demand<'a>` struct: `&'a EPANET`, node_index, demand_category_index, base_demand, pattern, name
+
+## Collection / Iterator Support
+
+- [ ] `EPANET::nodes(&self) -> Result<Vec<Node>>` - fetch all nodes
+- [ ] `EPANET::links(&self) -> Result<Vec<Link>>` - fetch all links
+- [ ] `EPANET::pipes(&self) -> Result<Vec<Link>>` - filtered convenience (links where `is_pipe()`)
+- [ ] `EPANET::pumps(&self) -> Result<Vec<Link>>` - filtered convenience
+- [ ] `EPANET::valves(&self) -> Result<Vec<Link>>` - filtered convenience
+- [ ] `EPANET::junctions(&self) -> Result<Vec<Node>>` - filtered convenience
+- [ ] `EPANET::tanks(&self) -> Result<Vec<Node>>` - filtered convenience
+- [ ] `EPANET::patterns(&self) -> Result<Vec<Pattern>>` - fetch all patterns
+- [ ] `EPANET::curves(&self) -> Result<Vec<Curve>>` - fetch all curves
+- [ ] `EPANET::controls(&self) -> Result<Vec<Control>>` - fetch all controls
+- [ ] `EPANET::rules(&self) -> Result<Vec<Rule>>` - fetch all rules
 
 ## API Ergonomics
 
