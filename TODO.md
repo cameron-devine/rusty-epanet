@@ -19,7 +19,7 @@ Functions available in `bindings.rs` but not yet wrapped with safe Rust methods.
 
 ### Link
 
-- [ ] `EN_addlink` - Create a new link (delete exists, add missing)
+- [x] `EN_addlink` - Create a new link (delete exists, add missing)
 
 ### Demand
 
@@ -103,22 +103,22 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 - [x] `Node::delete(self, ActionCodeType)` - consuming delete via `EN_deletenode`
 - [x] Live result methods: `pressure()`, `head()`, `demand()`, `quality()` - always query C
 - [x] Convenience: `as_junction()`, `as_tank()`, `as_reservoir()`, `is_junction()`, etc.
-- [ ] `EPANET::get_node_by_index(i32) -> Result<Node>` constructor (fetches all fields from C)
-- [ ] `EPANET::get_node(id: &str) -> Result<Node>` constructor (resolves ID first)
+- [x] `EPANET::get_node_by_index(i32) -> Result<Node>` constructor (fetches all fields from C)
+- [x] `EPANET::get_node(id: &str) -> Result<Node>` constructor (resolves ID first)
 
 ### Link
 
-- [ ] `Link<'a>` struct: `&'a EPANET`, index, id, from_node, to_node, status, `kind: LinkKind`
-- [ ] `LinkKind` enum: `Pipe(PipeData)`, `CvPipe(PipeData)`, `Pump(PumpData)`, `Valve(ValveData)`
-- [ ] `PipeData`: length, diameter, roughness, minor_loss
-- [ ] `PumpData`: pump_type, power, speed, head_curve_index, efficiency_curve_index, energy_pattern_index, energy_cost
-- [ ] `ValveData`: valve_type (`ValveType` enum: Prv/Psv/Pbv/Fcv/Tcv/Gpv/Pcv), diameter, setting, curve_index
-- [ ] `Link::update()` - dispatches on `kind` to call `EN_setpipedata` / `EN_setlinkvalue` etc.
-- [ ] `Link::delete(self, ActionCodeType)` - consuming delete via `EN_deletelink`
-- [ ] Live result methods: `flow()`, `velocity()`, `head_loss()`, `quality()`
-- [ ] Convenience: `as_pipe()`, `as_pipe_mut()`, `as_pump()`, `as_pump_mut()`, `as_valve()`, `is_pipe()`, etc.
-- [ ] `EPANET::get_link_by_index(i32) -> Result<Link>` constructor
-- [ ] `EPANET::get_link(id: &str) -> Result<Link>` constructor
+- [x] `Link<'a>` struct: `&'a EPANET`, index, id, from_node, to_node, status, `kind: LinkKind`
+- [x] `LinkKind` enum: `Pipe(PipeData)`, `CvPipe(PipeData)`, `Pump(PumpData)`, `Valve(ValveData)`
+- [x] `PipeData`: length, diameter, roughness, minor_loss
+- [x] `PumpData`: pump_type, power, speed, head_curve_index, efficiency_curve_index, energy_pattern_index, energy_cost
+- [x] `ValveData`: valve_type (`ValveType` enum: Prv/Psv/Pbv/Fcv/Tcv/Gpv/Pcv), diameter, setting, curve_index
+- [x] `Link::update()` - dispatches on `kind` to call `EN_setpipedata` / `EN_setlinkvalue` etc.
+- [x] `Link::delete(self, ActionCodeType)` - consuming delete via `EN_deletelink`
+- [x] Live result methods: `flow()`, `velocity()`, `head_loss()`, `quality()`
+- [x] Convenience: `as_pipe()`, `as_pipe_mut()`, `as_pump()`, `as_pump_mut()`, `as_valve()`, `is_pipe()`, etc.
+- [x] `EPANET::get_link_by_index(i32) -> Result<Link>` constructor
+- [x] `EPANET::get_link(id: &str) -> Result<Link>` constructor
 
 ### Refactor Control and Curve to match
 
