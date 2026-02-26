@@ -5,7 +5,7 @@ use crate::{
     },
     EPANET,
 };
-use enum_primitive::*;
+use num_derive::FromPrimitive;
 
 /// A struct for holding simple control information.
 ///
@@ -52,9 +52,8 @@ impl<'a> Control<'a> {
     }
 }
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum ControlType {
     /// Act when pressure or tank level drops below a setpoint
     LowLevel = EN_ControlType_EN_LOWLEVEL,
@@ -64,4 +63,4 @@ pub enum ControlType {
     Timer = EN_ControlType_EN_TIMER,
     /// Act at a particular time of day
     TimeOfDay = EN_ControlType_EN_TIMEOFDAY,
-}}
+}

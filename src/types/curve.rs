@@ -1,5 +1,5 @@
 use crate::{bindings::*, EPANET};
-use enum_primitive::*;
+use num_derive::FromPrimitive;
 
 /// A struct representing a curve in an EPANET project.
 ///
@@ -38,22 +38,20 @@ impl<'a> Curve<'a> {
     }
 }
 
-enum_from_primitive! {
-    /// Represents the type of a curve in an EPANET project.
-    #[derive(Debug, Copy, Clone, PartialEq)]
-    #[repr(u32)]
-    pub enum CurveType {
-        /// Tank volume vs. depth curve
-        VolumeCurve = EN_CurveType_EN_VOLUME_CURVE,
-        /// Pump head vs. flow curve
-        PumpCurve = EN_CurveType_EN_PUMP_CURVE,
-        /// Pump efficiency vs. flow curve
-        EfficCurve = EN_CurveType_EN_EFFIC_CURVE,
-        /// Valve head loss vs. flow curve
-        HLossCurve = EN_CurveType_EN_HLOSS_CURVE,
-        /// Generic curve
-        GenericCurve = EN_CurveType_EN_GENERIC_CURVE,
-        /// Valve loss coefficient vs. fraction open
-        ValveCurve = EN_CurveType_EN_VALVE_CURVE,
-    }
+/// Represents the type of a curve in an EPANET project.
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
+pub enum CurveType {
+    /// Tank volume vs. depth curve
+    VolumeCurve = EN_CurveType_EN_VOLUME_CURVE,
+    /// Pump head vs. flow curve
+    PumpCurve = EN_CurveType_EN_PUMP_CURVE,
+    /// Pump efficiency vs. flow curve
+    EfficCurve = EN_CurveType_EN_EFFIC_CURVE,
+    /// Valve head loss vs. flow curve
+    HLossCurve = EN_CurveType_EN_HLOSS_CURVE,
+    /// Generic curve
+    GenericCurve = EN_CurveType_EN_GENERIC_CURVE,
+    /// Valve loss coefficient vs. fraction open
+    ValveCurve = EN_CurveType_EN_VALVE_CURVE,
 }

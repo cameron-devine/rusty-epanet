@@ -1,17 +1,16 @@
 use crate::bindings::*;
 use crate::EPANET;
-use enum_primitive::*;
+use num_derive::FromPrimitive;
 use std::marker::PhantomData;
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum InitHydOption {
     NoSave = EN_InitHydOption_EN_NOSAVE, // Don't save hydraulics; don't re-initialize flows
     Save = EN_InitHydOption_EN_SAVE, // Save hydraulics to file, don't re-initialize flows
     InitFlow = EN_InitHydOption_EN_INITFLOW, // Don't save hydraulics; re-initialize flows
     SaveAndInit = EN_InitHydOption_EN_SAVE_AND_INIT, // Save hydraulics; re-initialize flows
-}}
+}
 
 struct Closed;
 struct Initialized;

@@ -1,9 +1,8 @@
 use crate::bindings::*;
-use enum_primitive::*;
+use num_derive::FromPrimitive;
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum LinkProperty {
     Diameter = EN_LinkProperty_EN_DIAMETER, // Pipe/valve diameter
     Length = EN_LinkProperty_EN_LENGTH, // Pipe length
@@ -34,11 +33,10 @@ pub enum LinkProperty {
     LeakArea = EN_LinkProperty_EN_LEAK_AREA, // Pipe leak area (sq mm per 100 length units)
     LeakExpan = EN_LinkProperty_EN_LEAK_EXPAN, // Leak expansion rate (sq mm per unit of pressure head)
     LinkLeakage = EN_LinkProperty_EN_LINK_LEAKAGE, // Current leakage rate (read only)
-}}
+}
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum LinkType {
     CvPipe = EN_LinkType_EN_CVPIPE, // Pipe with check valve
     Pipe = EN_LinkType_EN_PIPE, // Pipe
@@ -50,32 +48,29 @@ pub enum LinkType {
     Tcv = EN_LinkType_EN_TCV, // Throttle control valve
     Gpv = EN_LinkType_EN_GPV, // General purpose valve
     Pcv = EN_LinkType_EN_PCV, // Positional control valve
-}}
+}
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum LinkStatusType {
     Closed = EN_LinkStatusType_EN_CLOSED, // Link is closed
     Open = EN_LinkStatusType_EN_OPEN, // Link is open
-}}
+}
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum PumpType {
     ConstHp = EN_PumpType_EN_CONST_HP, // Constant horsepower
     PowerFunc = EN_PumpType_EN_POWER_FUNC, // Power function
     Custom = EN_PumpType_EN_CUSTOM, // User-defined custom curve
     NoCurve = EN_PumpType_EN_NOCURVE, // No curve
-}}
+}
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum PumpStateType {
     PumpXHead = EN_PumpStateType_EN_PUMP_XHEAD, // Pump closed - cannot supply head
     PumpClosed = EN_PumpStateType_EN_PUMP_CLOSED, // Pump closed
     PumpOpen = EN_PumpStateType_EN_PUMP_OPEN, // Pump open
     PumpXFlow = EN_PumpStateType_EN_PUMP_XFLOW, // Pump open - cannot supply flow
-}}
+}

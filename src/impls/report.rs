@@ -3,7 +3,7 @@ use crate::ffi;
 use crate::types::options::{AnalysisStatistic, Event, StatusReport, TimestepEvent};
 use crate::types::{ObjectType, MAX_MSG_SIZE};
 use crate::EPANET;
-use enum_primitive::FromPrimitive;
+use num_traits::FromPrimitive;
 use std::ffi::{c_char, CStr, CString};
 
 impl EPANET {

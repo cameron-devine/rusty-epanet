@@ -176,7 +176,7 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 
 ## Code Quality
 
-- [ ] Replace `enum_primitive` (unmaintained, last release 2016) with `num_derive`/`num_traits` or `strum` (already a dev-dep)
+- [x] Replace `enum_primitive` (unmaintained, last release 2016) with `num_derive`/`num_traits` or `strum` (already a dev-dep)
 - [ ] Add `#[must_use]` to Result-returning methods
 - [ ] Add `clippy` configuration and address any warnings
 - [ ] Consider `thiserror` for `EPANETError` derive instead of manual `Display`/`Error` impls

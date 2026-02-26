@@ -8,7 +8,7 @@ use crate::types::node::{Node, NodeProperty, NodeType};
 use crate::types::MAX_MSG_SIZE;
 use crate::types::{ActionCodeType, CountType::NodeCount};
 use crate::EPANET;
-use enum_primitive::FromPrimitive;
+use num_traits::FromPrimitive;
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::mem::MaybeUninit;
 

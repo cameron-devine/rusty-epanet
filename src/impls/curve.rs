@@ -6,7 +6,7 @@ use crate::epanet_error::*;
 use crate::types::curve::{Curve, CurveType};
 use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
-use enum_primitive::FromPrimitive;
+use num_traits::FromPrimitive;
 
 /// ## Curve APIs
 impl EPANET {

@@ -7,7 +7,7 @@ use crate::epanet_error::*;
 use crate::types::rule::*;
 use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
-use enum_primitive::*;
+use num_traits::FromPrimitive;
 use std::ffi::c_char;
 
 /// ## Rule baesd Control APIs

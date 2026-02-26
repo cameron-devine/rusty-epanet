@@ -1,13 +1,12 @@
 use crate::bindings::*;
-use enum_primitive::*;
+use num_derive::FromPrimitive;
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum DemandModel {
     Dda = EN_DemandModel_EN_DDA, // Demand driven analysis
     Pda = EN_DemandModel_EN_PDA, // Pressure driven analysis
-}}
+}
 
 pub struct DemandModelInfo {
     pub demand_type: DemandModel,

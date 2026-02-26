@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-enum_primitive = "0.1.1"
+num-traits = "0.2.19"
+num-derive = "0.4.2"
 
 [dev-dependencies]
 rstest = "0.18"
@@ -15,4 +16,4 @@ strum_macros = "0.27.2"
 
 [build-dependencies]
 bindgen = "0.72.0"
-cmake = "0.1.54"
+cmake = "0.1.57"

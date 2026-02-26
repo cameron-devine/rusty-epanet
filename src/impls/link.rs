@@ -8,7 +8,7 @@ use crate::types::link::*;
 use crate::types::MAX_ID_SIZE;
 use crate::types::{ActionCodeType, CountType::LinkCount};
 use crate::EPANET;
-use enum_primitive::FromPrimitive;
+use num_traits::FromPrimitive;
 use std::ffi::{c_char, CString};
 
 /// ## Link APIs

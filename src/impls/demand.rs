@@ -6,7 +6,7 @@ use crate::epanet_error::*;
 use crate::types::demand::*;
 use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
-use enum_primitive::FromPrimitive;
+use num_traits::FromPrimitive;
 use std::ffi::{c_char, CString};
 
 /// ## Demand APIs

@@ -5,7 +5,7 @@ use crate::bindings as ffi;
 use crate::epanet_error::*;
 use crate::types::control::{Control, ControlType};
 use crate::EPANET;
-use enum_primitive::FromPrimitive;
+use num_traits::FromPrimitive;
 
 /// ## Simple Control APIs
 impl EPANET {

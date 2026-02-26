@@ -7,7 +7,7 @@ use crate::epanet_error::*;
 use crate::types::options::{FlowUnits, Option, QualityAnalysisInfo, QualityType, TimeParameter};
 use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
-use enum_primitive::FromPrimitive;
+use num_traits::FromPrimitive;
 use std::ffi::{c_char, CString};
 
 /// ## Analysis Options APIs
@@ -32,13 +32,13 @@ impl EPANET {
         check_error(unsafe { ffi::EN_setflowunits(self.ph, flow_units as i32) })
     }
 
-    pub fn get_time_parameter(&self, parameter: TimeParameter) -> Result<i64> {
-        let mut value: i64 = 0;
+    pub fn get_time_parameter(&self, parameter: TimeParameter) -> Result<i32> {
+        let mut value: i32 = 0;
         check_error(unsafe { ffi::EN_gettimeparam(self.ph, parameter as i32, &mut value) })?;
         Ok(value)
     }
 
-    pub fn set_time_parameter(&self, parameter: TimeParameter, value: i64) -> Result<()> {
+    pub fn set_time_parameter(&self, parameter: TimeParameter, value: i32) -> Result<()> {
         check_error(unsafe { ffi::EN_settimeparam(self.ph, parameter as i32, value) })
     }
 

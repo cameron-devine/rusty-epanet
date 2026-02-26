@@ -1,18 +1,16 @@
 use crate::bindings::*;
-use enum_primitive::*;
+use num_derive::FromPrimitive;
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum RuleObject {
     Node = EN_RuleObject_EN_R_NODE, // Clause refers to a node
     Link = EN_RuleObject_EN_R_LINK, // Clause refers to a link
     System = EN_RuleObject_EN_R_SYSTEM, // Clause refers to a system parameter (e.g., time)
-}}
+}
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum RuleVariable {
     Demand = EN_RuleVariable_EN_R_DEMAND, // Nodal demand
     Head = EN_RuleVariable_EN_R_HEAD, // Nodal hydraulic head
@@ -27,11 +25,10 @@ pub enum RuleVariable {
     ClockTime = EN_RuleVariable_EN_R_CLOCKTIME, // Time of day
     FillTime = EN_RuleVariable_EN_R_FILLTIME, // Time to fill a tank
     DrainTime = EN_RuleVariable_EN_R_DRAINTIME, // Time to drain a tank
-}}
+}
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum RuleOperator {
     Eq = EN_RuleOperator_EN_R_EQ, // Equal to
     Ne = EN_RuleOperator_EN_R_NE, // Not equal
@@ -43,24 +40,22 @@ pub enum RuleOperator {
     Not = EN_RuleOperator_EN_R_NOT, // Is not equal to
     Below = EN_RuleOperator_EN_R_BELOW, // Is below
     Above = EN_RuleOperator_EN_R_ABOVE, // Is above
-}}
+}
 
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum RuleStatus {
     IsOpen = EN_RuleStatus_EN_R_IS_OPEN, // Link is open
     IsClosed = EN_RuleStatus_EN_R_IS_CLOSED, // Link is closed
     IsActive = EN_RuleStatus_EN_R_IS_ACTIVE, // Control valve is active
-}}
-enum_from_primitive! {
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u32)]
+}
+#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
+#[repr(i32)]
 pub enum LogicalOperator {
     IF = 1,
     AND = 2,
     OR = 3
-}}
+}
 
 /// Utility struct for rule based control information.
 pub struct Rule {
