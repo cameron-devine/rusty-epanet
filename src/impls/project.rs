@@ -27,6 +27,16 @@ impl EPANET {
             Err(EPANETError::from(result))
         }
     }
+
+    pub fn set_comment(&self, object_type: ObjectType, index: i32, comment: &str) -> Result<()> {
+        let _comment = CString::new(comment)?;
+        let result = unsafe { ffi::EN_setcomment(self.ph, object_type as i32, index, _comment.as_ptr()) };
+        if result == 0 {
+            Ok(())
+        } else {
+            Err(EPANETError::from(result))
+        }
+    }
     /// Returns the number of objects of a specified type in the current EPANET project.
     ///
     /// # Parameters
@@ -79,8 +89,6 @@ impl EPANET {
         }
     }
 
-    // todo: figure out why EN_gettag is not in the bindings
-    /*
     pub fn get_tag(&self, object_type: ObjectType, index: i32) -> Result<String> {
         let mut out_tag: Vec<c_char> = vec![0; MAX_MSG_SIZE as usize + 1usize];
         let result = unsafe { ffi::EN_gettag(self.ph, object_type as i32, index, out_tag.as_mut_ptr()) };
@@ -95,7 +103,16 @@ impl EPANET {
             Err(EPANETError::from(result))
         }
     }
-    */
+
+    pub fn set_tag(&self, object_type: ObjectType, index: i32, tag: &str) -> Result<()> {
+        let _tag = CString::new(tag)?;
+        let result = unsafe { ffi::EN_settag(self.ph, object_type as i32, index, _tag.as_ptr()) };
+        if result == 0 {
+            Ok(())
+        } else {
+            Err(EPANETError::from(result))
+        }
+    }
 
     pub fn set_title(&self, title_line1: &str, title_line2: &str, title_line3: &str) -> Result<()> {
         let c_title1 = CString::new(title_line1).expect("Title contains null bytes");

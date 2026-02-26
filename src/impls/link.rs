@@ -13,6 +13,140 @@ use std::ffi::{c_char, CString};
 
 /// ## Link APIs
 impl EPANET {
+    /// Adds a new link to the EPANET model.
+    ///
+    /// Returns the 1-based index of the newly created link.
+    pub fn add_link(
+        &self,
+        id: &str,
+        link_type: LinkType,
+        from_node: &str,
+        to_node: &str,
+    ) -> Result<i32> {
+        let c_id = CString::new(id)?;
+        let c_from = CString::new(from_node)?;
+        let c_to = CString::new(to_node)?;
+        let mut out_index = 0;
+
+        check_error_with_context(
+            unsafe {
+                ffi::EN_addlink(
+                    self.ph,
+                    c_id.as_ptr(),
+                    link_type as i32,
+                    c_from.as_ptr(),
+                    c_to.as_ptr(),
+                    &mut out_index,
+                )
+            },
+            format!(
+                "Failed to add link '{}' of type {:?} from '{}' to '{}'",
+                id, link_type, from_node, to_node
+            ),
+        )?;
+
+        Ok(out_index)
+    }
+
+    /// Retrieves a Link by its ID.
+    pub fn get_link(&self, id: &str) -> Result<Link<'_>> {
+        let index = self.get_link_index(id)?;
+        self.get_link_by_index(index)
+    }
+
+    /// Retrieves a Link by its index.
+    pub fn get_link_by_index(&self, index: i32) -> Result<Link<'_>> {
+        let id = self.get_link_id(index)?;
+        let link_type = self.get_link_type(index)?;
+        let (from_node, to_node) = self.get_link_nodes(index)?;
+        let status = LinkStatusType::from_i32(
+            self.get_link_value(index, LinkProperty::Status)? as i32
+        ).unwrap_or(LinkStatusType::Open);
+
+        let kind = match link_type {
+            LinkType::Pipe => LinkKind::Pipe(PipeData {
+                length: self.get_link_value(index, LinkProperty::Length)?,
+                diameter: self.get_link_value(index, LinkProperty::Diameter)?,
+                roughness: self.get_link_value(index, LinkProperty::Roughness)?,
+                minor_loss: self.get_link_value(index, LinkProperty::MinorLoss)?,
+            }),
+            LinkType::CvPipe => LinkKind::CvPipe(PipeData {
+                length: self.get_link_value(index, LinkProperty::Length)?,
+                diameter: self.get_link_value(index, LinkProperty::Diameter)?,
+                roughness: self.get_link_value(index, LinkProperty::Roughness)?,
+                minor_loss: self.get_link_value(index, LinkProperty::MinorLoss)?,
+            }),
+            LinkType::Pump => {
+                let pump_type = self.get_pump_type(index)?;
+                let head_curve_idx = self.get_head_curve_index(index).ok();
+                let head_curve_index = if head_curve_idx == Some(0) {
+                    None
+                } else {
+                    head_curve_idx
+                };
+
+                let efficiency_curve_idx =
+                    self.get_link_value(index, LinkProperty::PumpECurve)? as i32;
+                let efficiency_curve_index = if efficiency_curve_idx == 0 {
+                    None
+                } else {
+                    Some(efficiency_curve_idx)
+                };
+
+                let energy_pattern_idx =
+                    self.get_link_value(index, LinkProperty::PumpEPat)? as i32;
+                let energy_pattern_index = if energy_pattern_idx == 0 {
+                    None
+                } else {
+                    Some(energy_pattern_idx)
+                };
+
+                LinkKind::Pump(PumpData {
+                    pump_type,
+                    power: self.get_link_value(index, LinkProperty::PumpPower)?,
+                    speed: self.get_link_value(index, LinkProperty::InitSetting)?,
+                    head_curve_index,
+                    efficiency_curve_index,
+                    energy_pattern_index,
+                    energy_cost: self.get_link_value(index, LinkProperty::PumpECost)?,
+                })
+            }
+            LinkType::Prv
+            | LinkType::Psv
+            | LinkType::Pbv
+            | LinkType::Fcv
+            | LinkType::Tcv
+            | LinkType::Gpv
+            | LinkType::Pcv => {
+                let curve_idx = if link_type == LinkType::Gpv {
+                    let idx = self.get_link_value(index, LinkProperty::GPVCurve)? as i32;
+                    if idx == 0 { None } else { Some(idx) }
+                } else if link_type == LinkType::Pcv {
+                    let idx = self.get_link_value(index, LinkProperty::PCVCurve)? as i32;
+                    if idx == 0 { None } else { Some(idx) }
+                } else {
+                    None
+                };
+
+                LinkKind::Valve(ValveData {
+                    diameter: self.get_link_value(index, LinkProperty::Diameter)?,
+                    setting: self.get_link_value(index, LinkProperty::InitSetting)?,
+                    curve_index: curve_idx,
+                })
+            }
+        };
+
+        Ok(Link {
+            project: self,
+            index,
+            id,
+            from_node,
+            to_node,
+            status,
+            kind,
+        })
+    }
+
     pub fn delete_link(&self, index: i32, action_code_type: ActionCodeType) -> Result<()> {
         check_error(unsafe { ffi::EN_deletelink(self.ph, index, action_code_type as i32) })
     }

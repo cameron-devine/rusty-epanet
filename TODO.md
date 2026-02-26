@@ -6,16 +6,16 @@ Functions available in `bindings.rs` but not yet wrapped with safe Rust methods.
 
 ### Project / Network
 
-- [ ] `EN_setcomment` - Set object comment (get exists, set missing)
+- [x] `EN_setcomment` - Set object comment (get exists, set missing)
 - [ ] `EN_openX` - Open project with extended error reporting
-- [ ] `EN_gettag` / `EN_settag` - Object tagging (commented out in project.rs, noted as missing from bindings - investigate)
+- [x] `EN_gettag` / `EN_settag` - Object tagging (commented out in project.rs, noted as missing from bindings - investigate)
 
 ### Node
 
-- [ ] `EN_setjuncdata` - Set junction parameters (elevation, demand, demand pattern) in one call
-- [ ] `EN_settankdata` - Set tank parameters (elevation, init level, min/max level, diameter, min volume, volume curve) in one call
-- [ ] `EN_getcoord` / `EN_setcoord` - Node coordinate (x, y) get/set
-- [ ] `EN_getnumdemands` - Get number of demand categories for a node (used internally in demand.rs but not public)
+- [x] `EN_setjuncdata` - Set junction parameters (elevation, demand, demand pattern) in one call
+- [x] `EN_settankdata` - Set tank parameters (elevation, init level, min/max level, diameter, min volume, volume curve) in one call
+- [x] `EN_getcoord` / `EN_setcoord` - Node coordinate (x, y) get/set
+- [x] `EN_getnumdemands` - Get number of demand categories for a node (used internally in demand.rs but not public)
 
 ### Link
 
@@ -94,15 +94,15 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 
 ### Node
 
-- [ ] `Node<'a>` struct: `&'a EPANET`, index, id, `kind: NodeKind`
-- [ ] `NodeKind` enum: `Junction(JunctionData)`, `Tank(TankData)`, `Reservoir(ReservoirData)`
-- [ ] `JunctionData`: elevation, base_demand, demand_pattern, emitter_coeff, init_quality
-- [ ] `TankData`: elevation, init_level, min_level, max_level, diameter, min_volume, volume_curve
-- [ ] `ReservoirData`: total_head, head_pattern, init_quality
-- [ ] `Node::update()` - pushes cached fields back to C via `EN_setnodevalue` / `EN_setjuncdata` / `EN_settankdata`
-- [ ] `Node::delete(self, ActionCodeType)` - consuming delete via `EN_deletenode`
-- [ ] Live result methods: `pressure()`, `head()`, `demand()`, `quality()` - always query C
-- [ ] Convenience: `as_junction()`, `as_tank()`, `as_reservoir()`, `is_junction()`, etc.
+- [x] `Node<'a>` struct: `&'a EPANET`, index, id, `kind: NodeKind`
+- [x] `NodeKind` enum: `Junction(JunctionData)`, `Tank(TankData)`, `Reservoir(ReservoirData)`
+- [x] `JunctionData`: elevation, base_demand, demand_pattern, emitter_coeff, init_quality
+- [x] `TankData`: elevation, init_level, min_level, max_level, diameter, min_volume, volume_curve
+- [x] `ReservoirData`: total_head, head_pattern, init_quality
+- [x] `Node::update()` - pushes cached fields back to C via `EN_setnodevalue` / `EN_setjuncdata` / `EN_settankdata`
+- [x] `Node::delete(self, ActionCodeType)` - consuming delete via `EN_deletenode`
+- [x] Live result methods: `pressure()`, `head()`, `demand()`, `quality()` - always query C
+- [x] Convenience: `as_junction()`, `as_tank()`, `as_reservoir()`, `is_junction()`, etc.
 - [ ] `EPANET::get_node_by_index(i32) -> Result<Node>` constructor (fetches all fields from C)
 - [ ] `EPANET::get_node(id: &str) -> Result<Node>` constructor (resolves ID first)
 

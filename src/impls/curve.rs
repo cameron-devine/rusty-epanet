@@ -100,7 +100,7 @@ impl EPANET {
         }
     }
 
-    fn get_curve_id(&self, index: i32) -> Result<String> {
+    pub fn get_curve_id(&self, index: i32) -> Result<String> {
         let mut out_id: Vec<std::ffi::c_char> = vec![0; MAX_ID_SIZE as usize + 1];
         let result = unsafe { ffi::EN_getcurveid(self.ph, index, out_id.as_mut_ptr()) };
         if result == 0 {

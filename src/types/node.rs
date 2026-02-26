@@ -1,8 +1,8 @@
 use crate::bindings::*;
 use crate::epanet_error::*;
-use crate::types::ActionCodeType::Unconditional;
 use crate::EPANET;
 use num_derive::FromPrimitive;
+use crate::types::ActionCodeType;
 
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
@@ -84,167 +84,235 @@ pub enum SourceType {
 /// # Ok(()) }
 /// ```
 pub struct Node<'a> {
-    pub(crate) handle: &'a EPANET,
-    index: i32,
-    id: String,
-    node_type: NodeType,
+    pub(crate) project: &'a EPANET,
+    pub(crate) index: i32,
+    pub id: String,
+    pub kind: NodeKind,
+}
+
+pub enum NodeKind {
+    Junction(JunctionData),
+    Tank(TankData),
+    Reservoir(ReservoirData)
+}
+
+pub struct JunctionData {
+    pub elevation: f64,
+    pub demand: f64,
+    pub demand_pattern: String
+}
+
+pub struct TankData {
+    pub elevation: f64,
+    pub init_level: f64,
+    pub min_level: f64,
+    pub max_level: f64,
+    pub diameter: f64,
+    pub min_volume: f64,
+    pub volume_curve: String,
+}
+
+pub struct ReservoirData {
+    pub elevation: f64
 }
 
 impl<'a> Node<'a> {
-    /// Creates a new node and wraps it in [`Node`].
-    pub fn new(handle: &'a EPANET, id: &str, node_type: NodeType) -> Result<Self> {
-        let index = handle.add_node(id, node_type)?;
+    /// Creates a new junction node in the EPANET model.
+    pub fn new_junction(
+        project: &'a EPANET,
+        id: &str,
+        elevation: f64,
+        demand: f64,
+        demand_pattern: &str,
+    ) -> Result<Self> {
+        let index = project.add_node(id, NodeType::Junction)?;
+        project.set_junction_data(index, elevation, demand, demand_pattern)?;
+
         Ok(Node {
-            handle,
+            project,
             index,
             id: id.to_string(),
-            node_type,
+            kind: NodeKind::Junction(JunctionData {
+                elevation,
+                demand,
+                demand_pattern: demand_pattern.to_string(),
+            }),
         })
     }
 
-    /// Deletes a [`Node`] from the project
-    pub fn delete(self) -> Result<()> {
-        self.handle.delete_node(self.index, Unconditional)
-    }
-
-    /// Creates a [`Node`] from an existing index.
-    pub fn from_index(handle: &'a EPANET, index: i32) -> Result<Self> {
-        let id = handle.get_node_id(index)?;
-        let node_type = handle.get_node_type(index)?;
+    /// Creates a new tank node in the EPANET model.
+    pub fn new_tank(
+        project: &'a EPANET,
+        id: &str,
+        elevation: f64,
+        init_level: f64,
+        min_level: f64,
+        max_level: f64,
+        diameter: f64,
+        min_volume: f64,
+        volume_curve: &str,
+    ) -> Result<Self> {
+        let index = project.add_node(id, NodeType::Tank)?;
+        project.set_tank_data(
+            index,
+            elevation,
+            init_level,
+            min_level,
+            max_level,
+            diameter,
+            min_volume,
+            volume_curve,
+        )?;
 
         Ok(Node {
-            handle,
+            project,
             index,
-            id,
-            node_type,
+            id: id.to_string(),
+            kind: NodeKind::Tank(TankData {
+                elevation,
+                init_level,
+                min_level,
+                max_level,
+                diameter,
+                min_volume,
+                volume_curve: volume_curve.to_string(),
+            }),
         })
     }
 
-    /// Get the index of the node
-    pub fn get_index(&self) -> i32 {
+    /// Creates a new reservoir node in the EPANET model.
+    pub fn new_reservoir(project: &'a EPANET, id: &str, elevation: f64) -> Result<Self> {
+        let index = project.add_node(id, NodeType::Reservoir)?;
+        project.set_node_value(index, NodeProperty::Elevation, elevation)?;
+
+        Ok(Node {
+            project,
+            index,
+            id: id.to_string(),
+            kind: NodeKind::Reservoir(ReservoirData { elevation }),
+        })
+    }
+
+    pub fn update(&self) -> Result<()> {
+        // Only update ID if it has changed
+        let current_id = self.project.get_node_id(self.index)?;
+        if current_id != self.id {
+            self.project.set_node_id(self.index, &self.id)?;
+        }
+
+        match &self.kind {
+            NodeKind::Junction(d) => {
+                self.project.set_junction_data(self.index, d.elevation, d.demand, &d.demand_pattern)?;
+                Ok(())
+            }
+            NodeKind::Tank(d) => {
+                self.project.set_tank_data(
+                    self.index,
+                    d.elevation,
+                    d.init_level,
+                    d.min_level,
+                    d.max_level,
+                    d.diameter,
+                    d.min_volume,
+                    &d.volume_curve,
+                )
+            }
+            // todo: Double check if reservoirs have other properties to set
+            NodeKind::Reservoir(d) => {
+                self.project.set_node_value(self.index, NodeProperty::Elevation, d.elevation)
+            }
+        }
+    }
+    pub fn delete(self, action_code: ActionCodeType) -> Result<()> {
+        self.project.delete_node(self.index, action_code)
+    }
+    pub fn pressure(&self) -> Result<f64> {
+        self.project.get_node_value(self.index, NodeProperty::Pressure)
+    }
+    pub fn head(&self) -> Result<f64> {
+        self.project.get_node_value(self.index, NodeProperty::Head)
+    }
+    pub fn demand(&self) -> Result<f64> {
+        self.project.get_node_value(self.index, NodeProperty::Demand)
+    }  // computed demand, not base
+    pub fn quality(&self) -> Result<f64> {
+        self.project.get_node_value(self.index, NodeProperty::Quality)
+    }
+
+    pub fn as_junction(&self) -> Option<&JunctionData> {
+        match &self.kind {
+            NodeKind::Junction(d) => Some(d),
+            _ => None
+        }
+    }
+
+    pub fn as_junction_mut(&mut self) -> Option<&mut JunctionData> {
+        match &mut self.kind {
+            NodeKind::Junction(d) => Some(d),
+            _ => None
+        }
+    }
+
+    pub fn as_tank(&self) -> Option<&TankData> {
+        match &self.kind {
+            NodeKind::Tank(d) => Some(d),
+            _ => None
+        }
+    }
+
+    pub fn as_tank_mut(&mut self) -> Option<&mut TankData> {
+        match &mut self.kind {
+            NodeKind::Tank(d) => Some(d),
+            _ => None
+        }
+    }
+
+    pub fn as_reservoir(&self) -> Option<&ReservoirData> {
+        match &self.kind {
+            NodeKind::Reservoir(d) => Some(d),
+            _ => None
+        }
+    }
+
+    pub fn as_reservoir_mut(&mut self) -> Option<&mut ReservoirData> {
+        match &mut self.kind {
+            NodeKind::Reservoir(d) => Some(d),
+            _ => None
+        }
+    }
+
+    pub fn index(&self) -> i32 {
         self.index
     }
-    
-    /// Get the type of the node
-    pub fn get_type(&self) -> NodeType {
-        self.node_type
-    }
 
-    /// Gets the node id
-    pub fn get_id(&self) -> &str {
-        self.id.as_str()
-    }
-
-    /// Sets the node id
-    pub fn set_id(&mut self, id: &str) -> Result<()> {
-        self.handle.set_node_id(self.index, id)?;
-        self.id = id.to_string();
-        Ok(())
-    }
-
-    /// Retrieves a property value for this node.
-    pub fn get_value(&self, property: NodeProperty) -> Result<f64> {
-        self.handle.get_node_value(self.index, property)
-    }
-
-    /// Sets a property value for this node.
-    pub fn set_value(&self, property: NodeProperty, value: f64) -> Result<()> {
-        self.handle
-            .set_node_value(self.index, property, value)
-    }
-
-    /// Converts this node into a typed variant.
-    pub fn kind(self) -> NodeKind<'a> {
-        match self.node_type {
-            NodeType::Junction => NodeKind::Junction(Junction { node: self }),
-            NodeType::Reservoir => NodeKind::Reservoir(Reservoir { node: self }),
-            NodeType::Tank => NodeKind::Tank(Tank { node: self }),
+    pub fn node_type(&self) -> NodeType {
+        match &self.kind {
+            NodeKind::Junction(_) => NodeType::Junction,
+            NodeKind::Tank(_) => NodeType::Tank,
+            NodeKind::Reservoir(_) => NodeType::Reservoir,
         }
     }
-}
 
-/// Typed representation of different kinds of nodes.
-pub enum NodeKind<'a> {
-    Junction(Junction<'a>),
-    Reservoir(Reservoir<'a>),
-    Tank(Tank<'a>),
-}
-
-/// Junction node wrapper.
-pub struct Junction<'a> {
-    pub node: Node<'a>,
-}
-
-impl<'a> Junction<'a> {
-    pub fn base_demand(&self) -> Result<f64> {
-        self.node.get_value(NodeProperty::BaseDemand)
+    pub fn is_junction(&self) -> bool {
+        matches!(self.kind, NodeKind::Junction(_))
     }
 
-    pub fn set_base_demand(&self, value: f64) -> Result<()> {
-        self.node.set_value(NodeProperty::BaseDemand, value)
-    }
-}
-
-/// Reservoir node wrapper.
-pub struct Reservoir<'a> {
-    pub node: Node<'a>,
-}
-
-impl<'a> Reservoir<'a> {
-    pub fn elevation(&self) -> Result<f64> {
-        self.node.get_value(NodeProperty::Elevation)
+    pub fn is_tank(&self) -> bool {
+        matches!(self.kind, NodeKind::Tank(_))
     }
 
-    pub fn set_elevation(&self, value: f64) -> Result<()> {
-        self.node.set_value(NodeProperty::Elevation, value)
-    }
-}
-
-/// Tank node wrapper.
-pub struct Tank<'a> {
-    pub node: Node<'a>,
-}
-
-impl<'a> Tank<'a> {
-    pub fn tank_level(&self) -> Result<f64> {
-        self.node.get_value(NodeProperty::TankLevel)
+    pub fn is_reservoir(&self) -> bool {
+        matches!(self.kind, NodeKind::Reservoir(_))
     }
 
-    pub fn set_tank_level(&self, value: f64) -> Result<()> {
-        self.node.set_value(NodeProperty::TankLevel, value)
+    /// Get coordinates for this node.
+    pub fn coordinates(&self) -> Result<(f64, f64)> {
+        self.project.get_coordinates(self.index)
     }
-}
 
-impl<'a> TryFrom<Node<'a>> for Junction<'a> {
-    type Error = Node<'a>;
-    fn try_from(node: Node<'a>) -> std::result::Result<Self, Self::Error> {
-        if node.node_type == NodeType::Junction {
-            Ok(Junction { node })
-        } else {
-            Err(node)
-        }
-    }
-}
-
-impl<'a> TryFrom<Node<'a>> for Reservoir<'a> {
-    type Error = Node<'a>;
-    fn try_from(node: Node<'a>) -> std::result::Result<Self, Self::Error> {
-        if node.node_type == NodeType::Reservoir {
-            Ok(Reservoir { node })
-        } else {
-            Err(node)
-        }
-    }
-}
-
-impl<'a> TryFrom<Node<'a>> for Tank<'a> {
-    type Error = Node<'a>;
-    fn try_from(node: Node<'a>) -> std::result::Result<Self, Self::Error> {
-        if node.node_type == NodeType::Tank {
-            Ok(Tank { node })
-        } else {
-            Err(node)
-        }
+    /// Set coordinates for this node.
+    pub fn set_coordinates(&self, x: f64, y: f64) -> Result<()> {
+        self.project.set_coordinates(self.index, x, y)
     }
 }
 
@@ -255,26 +323,59 @@ mod tests {
     use crate::impls::test_utils::fixtures::*;
 
     #[rstest]
-    fn node_type_from_index(ph_close: EPANET) {
-        let node = Node::new(&ph_close, "TMP", NodeType::Junction).unwrap();
-        let idx = node.get_index();
-        assert_eq!(node.get_id(), "TMP");
-        assert_eq!(node.get_type(), NodeType::Junction);
+    fn test_node_create_junction(ph_close: crate::EPANET) {
+        let node = Node::new_junction(&ph_close, "J1", 100.0, 50.0, "").unwrap();
+        assert_eq!(node.id, "J1");
+        assert!(node.is_junction());
+        assert!(!node.is_tank());
+        assert!(!node.is_reservoir());
 
-        let fetched = Node::from_index(&ph_close, idx).unwrap();
-        assert_eq!(fetched.get_id(), "TMP");
-        assert_eq!(fetched.get_type(), NodeType::Junction);
+        let junction_data = node.as_junction().unwrap();
+        assert_eq!(junction_data.elevation, 100.0);
+        assert_eq!(junction_data.demand, 50.0);
     }
 
     #[rstest]
-    fn node_junction_from_variant(ph_close: EPANET) {
-        let node = Node::new(&ph_close, "TMP", NodeType::Junction).unwrap();
-        match node.kind() {
-            NodeKind::Junction(j) => {
-                let demand = j.base_demand().unwrap();
-                assert!(demand >= 0.0);
-            }
-            _ => panic!("expected junction"),
+    fn test_node_create_reservoir(ph_close: crate::EPANET) {
+        let node = Node::new_reservoir(&ph_close, "R1", 200.0).unwrap();
+        assert_eq!(node.id, "R1");
+        assert!(node.is_reservoir());
+        assert!(!node.is_junction());
+        assert!(!node.is_tank());
+
+        let reservoir_data = node.as_reservoir().unwrap();
+        assert_eq!(reservoir_data.elevation, 200.0);
+    }
+
+    #[rstest]
+    fn test_node_get_from_model(ph: crate::EPANET) {
+        // Get an existing junction from the test model
+        let node = ph.get_node("11").unwrap();
+        assert_eq!(node.id, "11");
+        assert!(node.is_junction());
+
+        let junction_data = node.as_junction().unwrap();
+        assert_eq!(junction_data.elevation, 710.0);
+        assert_eq!(junction_data.demand, 150.0);
+    }
+
+    #[rstest]
+    fn test_node_update(ph_close: crate::EPANET) {
+        let mut node = Node::new_junction(&ph_close, "J2", 100.0, 50.0, "").unwrap();
+
+        // Modify data
+        if let Some(junction_data) = node.as_junction_mut() {
+            junction_data.elevation = 150.0;
+            junction_data.demand = 75.0;
         }
+
+        // Update in model
+        node.update().unwrap();
+
+        // Verify the changes persisted
+        let retrieved = ph_close.get_node("J2").unwrap();
+        let retrieved_data = retrieved.as_junction().unwrap();
+        assert_eq!(retrieved_data.elevation, 150.0);
+        assert_eq!(retrieved_data.demand, 75.0);
     }
 }
