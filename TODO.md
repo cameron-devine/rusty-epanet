@@ -23,12 +23,12 @@ Functions available in `bindings.rs` but not yet wrapped with safe Rust methods.
 
 ### Demand
 
-- [ ] `EN_setdemandname` - Set demand category name (get exists, set missing)
+- [x] `EN_setdemandname` - Set demand category name (get exists, set missing)
 
 ### Pattern
 
-- [ ] `EN_getpatternindex` - Get pattern index by ID
-- [ ] `EN_loadpatternfile` - Load patterns from file (called in impls but may not be publicly exposed)
+- [x] `EN_getpatternindex` - Get pattern index by ID
+- [x] `EN_loadpatternfile` - Load patterns from file (called in impls but may not be publicly exposed)
 
 ### Curve
 
@@ -123,7 +123,7 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 ### Refactor Control and Curve to match
 
 - [ ] Refactor `Control<'a>` to use the same pattern (struct owns data, `update()`/`delete(self)` call FFI directly instead of delegating to `project.update_control()`)
-- [ ] Refactor `Curve<'a>` to match
+- [x] Refactor `Curve<'a>` to match
 
 ### Pattern
 

@@ -10,6 +10,15 @@ use num_traits::FromPrimitive;
 
 /// ## Curve APIs
 impl EPANET {
+    /// Creates a new curve in the EPANET model.
+    ///
+    /// # Parameters
+    /// - `id`: Unique identifier for the curve
+    /// - `curve_type`: Type of curve (volume, pump, efficiency, etc.)
+    /// - `points`: Array of (x, y) coordinate pairs defining the curve
+    ///
+    /// # Returns
+    /// A [`Curve`] struct with a reference to this project.
     pub fn create_curve(
         &self,
         id: &str,
@@ -31,24 +40,25 @@ impl EPANET {
         })
     }
 
-    pub fn get_curve_by_id(&self, id: &str) -> Result<Curve<'_>> {
-        let index = self.get_curve_index(id)?;
-        let curve_type = self.get_curve_type(index)?;
-        let points = self.get_curve_points(index)?;
-
-        Ok(Curve {
-            project: self,
-            index,
-            id: id.to_string(),
-            curve_type,
-            points,
-        })
+    /// Retrieves a curve by its ID.
+    ///
+    /// Convenience method that calls [`get_curve_by_id`](Self::get_curve_by_id).
+    pub fn get_curve(&self, id: &str) -> Result<Curve<'_>> {
+        self.get_curve_by_id(id)
     }
 
+    /// Retrieves a curve by its ID.
+    pub fn get_curve_by_id(&self, id: &str) -> Result<Curve<'_>> {
+        let index = self.get_curve_index(id)?;
+        self.get_curve_by_index(index)
+    }
+
+    /// Retrieves a curve by its index.
     pub fn get_curve_by_index(&self, index: i32) -> Result<Curve<'_>> {
         let id = self.get_curve_id(index)?;
         let curve_type = self.get_curve_type(index)?;
         let points = self.get_curve_points(index)?;
+
         Ok(Curve {
             project: self,
             index,
@@ -58,24 +68,14 @@ impl EPANET {
         })
     }
 
-    pub fn update_curve(&self, curve: &Curve) -> Result<()> {
-        self.set_curve_id(curve.index, &curve.id)?;
-        self.set_curve_type(curve.index, curve.curve_type)?;
-        self.set_curve(curve.index, &curve.points)?;
-        Ok(())
-    }
-
-    pub fn delete_curve(&self, curve: Curve) -> Result<()> {
-        self.delete_curve_by_id(curve.index)?;
-        Ok(())
-    }
+    // Helper methods - Internal API
 
     fn add_curve(&self, id: &str) -> Result<()> {
         let c_id = std::ffi::CString::new(id).unwrap();
         check_error(unsafe { ffi::EN_addcurve(self.ph, c_id.as_ptr()) })
     }
 
-    fn delete_curve_by_id(&self, index: i32) -> Result<()> {
+    pub fn delete_curve_by_id(&self, index: i32) -> Result<()> {
         check_error(unsafe { ffi::EN_deletecurve(self.ph, index) })
     }
 
@@ -86,7 +86,7 @@ impl EPANET {
         Ok(out_index)
     }
 
-    pub fn get_curve_id(&self, index: i32) -> Result<String> {
+    pub(crate) fn get_curve_id(&self, index: i32) -> Result<String> {
         let mut out_id: Vec<std::ffi::c_char> = vec![0; MAX_ID_SIZE as usize + 1];
         check_error(unsafe { ffi::EN_getcurveid(self.ph, index, out_id.as_mut_ptr()) })?;
         let id = unsafe { std::ffi::CStr::from_ptr(out_id.as_ptr()) }
@@ -97,7 +97,7 @@ impl EPANET {
         Ok(id)
     }
 
-    fn set_curve_id(&self, index: i32, id: &str) -> Result<()> {
+    pub(crate) fn set_curve_id(&self, index: i32, id: &str) -> Result<()> {
         let c_id = std::ffi::CString::new(id).unwrap();
         check_error(unsafe { ffi::EN_setcurveid(self.ph, index, c_id.as_ptr()) })
     }
@@ -114,7 +114,7 @@ impl EPANET {
         Ok(CurveType::from_i32(out_type).unwrap())
     }
 
-    fn set_curve_type(&self, index: i32, curve_type: CurveType) -> Result<()> {
+    pub(crate) fn set_curve_type(&self, index: i32, curve_type: CurveType) -> Result<()> {
         check_error(unsafe { ffi::EN_setcurvetype(self.ph, index, curve_type as i32) })
     }
 
@@ -142,7 +142,7 @@ impl EPANET {
             .collect())
     }
 
-    fn set_curve(&self, index: i32, values: &[(f64, f64)]) -> Result<()> {
+    pub(crate) fn set_curve(&self, index: i32, values: &[(f64, f64)]) -> Result<()> {
         let (mut x_vec, mut y_vec): (Vec<f64>, Vec<f64>) = values.iter().cloned().unzip();
 
         check_error(unsafe {
@@ -161,50 +161,114 @@ impl EPANET {
 mod tests {
     use super::*;
     use crate::impls::test_utils::fixtures::*;
+    use crate::types::curve::Curve;
     use crate::EPANET;
     use rstest::*;
 
     #[rstest]
-    fn test_create_and_get_curve(ph: EPANET) {
-        let points = vec![(1.0, 2.0), (3.0, 4.0)];
-        let id = "CurveA";
-        let curve_type = CurveType::EfficCurve;
+    fn test_create_curve_constructors(ph: EPANET) {
+        // Test volume curve
+        let vol_points = vec![(0.0, 0.0), (10.0, 1000.0), (20.0, 5000.0)];
+        let vol_curve = Curve::new_volume_curve(&ph, "VolCurve1", &vol_points).unwrap();
+        assert_eq!(vol_curve.id, "VolCurve1");
+        assert_eq!(vol_curve.curve_type, CurveType::VolumeCurve);
+        assert_eq!(vol_curve.points, vol_points);
 
-        let curve = ph.create_curve(id, curve_type, &points).unwrap();
-        assert_eq!(curve.id, id);
-        assert_eq!(curve.curve_type, curve_type);
-        assert_eq!(curve.points, points);
+        // Test pump curve
+        let pump_points = vec![(0.0, 100.0), (500.0, 80.0), (1000.0, 50.0)];
+        let pump_curve = Curve::new_pump_curve(&ph, "PumpCurve1", &pump_points).unwrap();
+        assert_eq!(pump_curve.curve_type, CurveType::PumpCurve);
+        assert_eq!(pump_curve.points, pump_points);
 
-        let fetched = ph.get_curve_by_id(id).unwrap();
-        assert_eq!(fetched.id, id);
-        assert_eq!(fetched.curve_type, curve_type);
-        assert_eq!(fetched.points, points);
+        // Test efficiency curve
+        let eff_points = vec![(0.0, 0.0), (500.0, 85.0), (1000.0, 75.0)];
+        let eff_curve = Curve::new_efficiency_curve(&ph, "EffCurve1", &eff_points).unwrap();
+        assert_eq!(eff_curve.curve_type, CurveType::EfficCurve);
+
+        // Test headloss curve
+        let hloss_points = vec![(0.0, 0.0), (100.0, 5.0)];
+        let hloss_curve = Curve::new_headloss_curve(&ph, "HLossCurve1", &hloss_points).unwrap();
+        assert_eq!(hloss_curve.curve_type, CurveType::HLossCurve);
+
+        // Test generic curve
+        let gen_points = vec![(1.0, 1.0), (2.0, 4.0)];
+        let gen_curve = Curve::new_generic_curve(&ph, "GenCurve1", &gen_points).unwrap();
+        assert_eq!(gen_curve.curve_type, CurveType::GenericCurve);
+
+        // Test valve curve
+        let valve_points = vec![(0.0, 0.0), (0.5, 0.25), (1.0, 1.0)];
+        let valve_curve = Curve::new_valve_curve(&ph, "ValveCurve1", &valve_points).unwrap();
+        assert_eq!(valve_curve.curve_type, CurveType::ValveCurve);
+    }
+
+    #[rstest]
+    fn test_get_curve_methods(ph: EPANET) {
+        let points = vec![(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)];
+        let id = "TestCurve";
+        let curve_type = CurveType::PumpCurve;
+
+        // Create curve
+        let created = ph.create_curve(id, curve_type, &points).unwrap();
+        let index = created.index;
+
+        // Test get_curve (convenience method)
+        let curve1 = ph.get_curve(id).unwrap();
+        assert_eq!(curve1.id, id);
+        assert_eq!(curve1.curve_type, curve_type);
+        assert_eq!(curve1.points, points);
+
+        // Test get_curve_by_id
+        let curve2 = ph.get_curve_by_id(id).unwrap();
+        assert_eq!(curve2.id, id);
+        assert_eq!(curve2.index, index);
+
+        // Test get_curve_by_index
+        let curve3 = ph.get_curve_by_index(index).unwrap();
+        assert_eq!(curve3.id, id);
+        assert_eq!(curve3.curve_type, curve_type);
+        assert_eq!(curve3.points, points);
     }
 
     #[rstest]
     fn test_update_curve(ph: EPANET) {
-        let id = "CurveB";
-        let curve_type = CurveType::PumpCurve;
-        let points = vec![(5.0, 6.0), (7.0, 8.0)];
-        let mut curve = ph.create_curve(id, curve_type, &points).unwrap();
+        let id = "UpdateTest";
+        let points = vec![(0.0, 0.0), (10.0, 100.0)];
+        let mut curve = Curve::new_pump_curve(&ph, id, &points).unwrap();
 
-        // Update curve and sync changes
-        curve.points = vec![(9.0, 10.0), (11.0, 12.0)];
+        // Update ID
+        curve.id = "UpdatedID".to_string();
         curve.update().unwrap();
+        let fetched = ph.get_curve("UpdatedID").unwrap();
+        assert_eq!(fetched.id, "UpdatedID");
 
-        let updated = ph.get_curve_by_id(id).unwrap();
-        assert_eq!(updated.points, curve.points);
+        // Update curve type
+        curve.curve_type = CurveType::EfficCurve;
+        curve.update().unwrap();
+        let fetched = ph.get_curve("UpdatedID").unwrap();
+        assert_eq!(fetched.curve_type, CurveType::EfficCurve);
+
+        // Update points
+        let new_points = vec![(0.0, 0.0), (50.0, 75.0), (100.0, 90.0)];
+        curve.points = new_points.clone();
+        curve.update().unwrap();
+        let fetched = ph.get_curve("UpdatedID").unwrap();
+        assert_eq!(fetched.points, new_points);
     }
 
     #[rstest]
     fn test_delete_curve(ph: EPANET) {
-        let id = "CurveC";
-        let curve_type = CurveType::VolumeCurve;
-        let points = vec![(13.0, 14.0)];
-        let curve = ph.create_curve(id, curve_type, &points).unwrap();
+        let points = vec![(0.0, 0.0), (10.0, 100.0)];
+        let curve = Curve::new_volume_curve(&ph, "DeleteTest", &points).unwrap();
+        let id = curve.id.clone();
 
+        // Verify curve exists
+        assert!(ph.get_curve(&id).is_ok());
+
+        // Delete curve
         curve.delete().unwrap();
-        let result = ph.get_curve_by_id(id);
+
+        // Verify curve no longer exists
+        let result = ph.get_curve(&id);
         assert!(result.is_err());
     }
 }

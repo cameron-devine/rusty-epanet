@@ -18,6 +18,13 @@ impl EPANET {
         check_error(unsafe { ffi::EN_deletepattern(self.ph, index) })
     }
 
+    pub fn get_pattern_index(&self, id: &str) -> Result<i32> {
+        let mut index: i32 = 0;
+        let _id = std::ffi::CString::new(id).unwrap();
+        check_error(unsafe {ffi::EN_getpatternindex(self.ph, _id.as_ptr(), &mut index)})?;
+        Ok(index)
+    }
+
     pub fn get_pattern_id(&self, index: i32) -> Result<String> {
         let mut out_id: Vec<std::ffi::c_char> = vec![0; MAX_ID_SIZE as usize + 1];
         check_error(unsafe { ffi::EN_getpatternid(self.ph, index, out_id.as_mut_ptr()) })?;

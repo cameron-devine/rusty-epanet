@@ -1,4 +1,4 @@
-use crate::{bindings::*, EPANET};
+use crate::{bindings::*, EPANET, epanet_error::*};
 use num_derive::FromPrimitive;
 
 /// A struct representing a curve in an EPANET project.
@@ -22,19 +22,76 @@ pub struct Curve<'a> {
 }
 
 impl<'a> Curve<'a> {
-    /// Returns the EPANET project index of the curve
-    pub fn index(&self) -> i32 {
-        self.index
+    /// Creates a new volume curve (tank volume vs. depth).
+    pub fn new_volume_curve(
+        project: &'a EPANET,
+        id: &str,
+        points: &[(f64, f64)],
+    ) -> Result<Self> {
+        project.create_curve(id, CurveType::VolumeCurve, points)
     }
 
-    /// Synchronises any local changes of this curve back to the EPANET engine.
-    pub fn update(&self) -> crate::epanet_error::Result<()> {
-        self.project.update_curve(self)
+    /// Creates a new pump curve (head vs. flow).
+    pub fn new_pump_curve(
+        project: &'a EPANET,
+        id: &str,
+        points: &[(f64, f64)],
+    ) -> Result<Self> {
+        project.create_curve(id, CurveType::PumpCurve, points)
     }
 
-    /// Deletes this curve from the EPANET project.
-    pub fn delete(self) -> crate::epanet_error::Result<()> {
-        self.project.delete_curve(self)
+    /// Creates a new efficiency curve (pump efficiency vs. flow).
+    pub fn new_efficiency_curve(
+        project: &'a EPANET,
+        id: &str,
+        points: &[(f64, f64)],
+    ) -> Result<Self> {
+        project.create_curve(id, CurveType::EfficCurve, points)
+    }
+
+    /// Creates a new head loss curve (valve head loss vs. flow).
+    pub fn new_headloss_curve(
+        project: &'a EPANET,
+        id: &str,
+        points: &[(f64, f64)],
+    ) -> Result<Self> {
+        project.create_curve(id, CurveType::HLossCurve, points)
+    }
+
+    /// Creates a new generic curve.
+    pub fn new_generic_curve(
+        project: &'a EPANET,
+        id: &str,
+        points: &[(f64, f64)],
+    ) -> Result<Self> {
+        project.create_curve(id, CurveType::GenericCurve, points)
+    }
+
+    /// Creates a new valve curve (valve loss coefficient vs. fraction open).
+    pub fn new_valve_curve(
+        project: &'a EPANET,
+        id: &str,
+        points: &[(f64, f64)],
+    ) -> Result<Self> {
+        project.create_curve(id, CurveType::ValveCurve, points)
+    }
+
+    /// Updates the curve in the EPANET model with current field values.
+    pub fn update(&self) -> Result<()> {
+        let current_id = self.project.get_curve_id(self.index)?;
+        if current_id != self.id {
+            self.project.set_curve_id(self.index, &self.id)?;
+        }
+
+        self.project.set_curve_type(self.index, self.curve_type)?;
+        self.project.set_curve(self.index, &self.points)
+    }
+
+    /// Deletes this curve from the EPANET model.
+    ///
+    /// This method consumes the curve, preventing further use after deletion.
+    pub fn delete(self) -> Result<()> {
+        self.project.delete_curve_by_id(self.index)
     }
 }
 
