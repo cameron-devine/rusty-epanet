@@ -47,9 +47,9 @@ Functions available in `bindings.rs` but not yet wrapped with safe Rust methods.
 
 ### Report
 
-- [ ] `EN_writeline` - Write a line to the report file
-- [ ] `EN_setstatusreport` - Set level of hydraulic status reporting
-- [ ] `EN_timetonextevent` - Get time until next event (exists in bindings, not wrapped)
+- [x] `EN_writeline` - Write a line to the report file
+- [x] `EN_setstatusreport` - Set level of hydraulic status reporting
+- [x] `EN_timetonextevent` - Get time until next event (exists in bindings, not wrapped)
 
 ## Typestate Solvers
 

@@ -2,3 +2,4 @@
 /Cargo.lock
 .idea
 /src/error_messages.rs
+.claude

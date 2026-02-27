@@ -2,12 +2,53 @@ pub mod types;
 use bindings as ffi;
 use epanet_error::*;
 use std::ffi::CString;
+use std::os::raw::c_void;
 use types::options::{FlowUnits, HeadLossType};
+use types::report::ReportCallback;
 
-/// An EPANET Project wrapper
-#[derive(Debug)]
+/// An EPANET Project wrapper.
+///
+/// This struct owns the EPANET project handle and provides safe Rust wrappers
+/// for all EPANET C API functions. When dropped, it automatically closes the
+/// project and frees all associated resources.
+///
+/// # Thread Safety
+///
+/// `EPANET` implements `Send` and `Sync`, meaning it can be safely shared
+/// between threads. However, the underlying EPANET C library may not be
+/// thread-safe for concurrent operations on the same project, so external
+/// synchronization may be required for concurrent access.
+///
+/// # Report Callback
+///
+/// An optional report callback can be registered via [`set_report_callback`](Self::set_report_callback)
+/// to intercept report output instead of writing to a file. The callback is
+/// automatically freed when the `EPANET` instance is dropped or when a new
+/// callback is registered.
 pub struct EPANET {
-    ph: ffi::EN_Project,
+    /// The EPANET project handle (opaque pointer to C struct)
+    pub(crate) ph: ffi::EN_Project,
+
+    /// Raw pointer to the boxed report callback, if one is registered.
+    ///
+    /// This is stored as a raw pointer rather than `Option<Box<ReportCallback>>`
+    /// because we need to pass it to the C API as `*mut c_void` user data.
+    /// The pointer is created via `Box::into_raw` and must be freed via
+    /// `Box::from_raw` when the callback is replaced or the struct is dropped.
+    report_callback_ptr: Option<*mut c_void>,
+}
+
+// Manual Debug implementation since *mut c_void doesn't implement Debug nicely
+impl std::fmt::Debug for EPANET {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EPANET")
+            .field("ph", &self.ph)
+            .field(
+                "report_callback_ptr",
+                &self.report_callback_ptr.map(|p| format!("{:p}", p)),
+            )
+            .finish()
+    }
 }
 
 impl EPANET {
@@ -68,7 +109,10 @@ impl EPANET {
         }
 
         // Step 4: Return the EPANET instance
-        Ok(Self { ph })
+        Ok(Self {
+            ph,
+            report_callback_ptr: None,
+        })
     }
 
     pub fn with_inp_file(inp_path: &str, report_path: &str, out_path: &str) -> Result<Self> {
@@ -88,7 +132,10 @@ impl EPANET {
         }
 
         // Step 4: Return the EPANET instance
-        Ok(Self { ph })
+        Ok(Self {
+            ph,
+            report_callback_ptr: None,
+        })
     }
 
     pub fn with_inp_file_allow_errors(
@@ -112,7 +159,10 @@ impl EPANET {
         }
 
         // Step 4: Return the EPANET instance
-        Ok(Self { ph })
+        Ok(Self {
+            ph,
+            report_callback_ptr: None,
+        })
     }
 }
 
@@ -121,6 +171,21 @@ unsafe impl Sync for EPANET {}
 
 impl Drop for EPANET {
     fn drop(&mut self) {
+        // Free the report callback if one is registered.
+        // SAFETY: If report_callback_ptr is Some, it was created via Box::into_raw
+        // in set_report_callback and has not been freed yet.
+        if let Some(ptr) = self.report_callback_ptr.take() {
+            unsafe {
+                // First, unregister the callback from EPANET to prevent any further calls
+                let _ = ffi::EN_setreportcallback(self.ph, None);
+                let _ = ffi::EN_setreportcallbackuserdata(self.ph, std::ptr::null_mut());
+
+                // Then free the boxed closure
+                drop(Box::from_raw(ptr as *mut ReportCallback));
+            }
+        }
+
+        // Close and delete the EPANET project
         unsafe {
             ffi::EN_close(self.ph);
             ffi::EN_deleteproject(self.ph);
