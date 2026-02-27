@@ -7,6 +7,7 @@ use crate::types::curve::{Curve, CurveType};
 use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
 use num_traits::FromPrimitive;
+use crate::ffi::{EN_getcurvevalue, EN_setcurvevalue};
 
 /// ## Curve APIs
 impl EPANET {
@@ -70,7 +71,7 @@ impl EPANET {
 
     // Helper methods - Internal API
 
-    fn add_curve(&self, id: &str) -> Result<()> {
+    pub fn add_curve(&self, id: &str) -> Result<()> {
         let c_id = std::ffi::CString::new(id).unwrap();
         check_error(unsafe { ffi::EN_addcurve(self.ph, c_id.as_ptr()) })
     }
@@ -79,14 +80,14 @@ impl EPANET {
         check_error(unsafe { ffi::EN_deletecurve(self.ph, index) })
     }
 
-    fn get_curve_index(&self, id: &str) -> Result<i32> {
+    pub fn get_curve_index(&self, id: &str) -> Result<i32> {
         let c_id = std::ffi::CString::new(id).unwrap();
         let mut out_index = 0;
         check_error(unsafe { ffi::EN_getcurveindex(self.ph, c_id.as_ptr(), &mut out_index) })?;
         Ok(out_index)
     }
 
-    pub(crate) fn get_curve_id(&self, index: i32) -> Result<String> {
+    pub fn get_curve_id(&self, index: i32) -> Result<String> {
         let mut out_id: Vec<std::ffi::c_char> = vec![0; MAX_ID_SIZE as usize + 1];
         check_error(unsafe { ffi::EN_getcurveid(self.ph, index, out_id.as_mut_ptr()) })?;
         let id = unsafe { std::ffi::CStr::from_ptr(out_id.as_ptr()) }
@@ -97,28 +98,28 @@ impl EPANET {
         Ok(id)
     }
 
-    pub(crate) fn set_curve_id(&self, index: i32, id: &str) -> Result<()> {
+    pub fn set_curve_id(&self, index: i32, id: &str) -> Result<()> {
         let c_id = std::ffi::CString::new(id).unwrap();
         check_error(unsafe { ffi::EN_setcurveid(self.ph, index, c_id.as_ptr()) })
     }
 
-    fn get_curve_len(&self, index: i32) -> Result<i32> {
+    pub fn get_curve_len(&self, index: i32) -> Result<i32> {
         let mut out_len = 0;
         check_error(unsafe { ffi::EN_getcurvelen(self.ph, index, &mut out_len) })?;
         Ok(out_len)
     }
 
-    fn get_curve_type(&self, index: i32) -> Result<CurveType> {
+    pub fn get_curve_type(&self, index: i32) -> Result<CurveType> {
         let mut out_type = 0;
         check_error(unsafe { ffi::EN_getcurvetype(self.ph, index, &mut out_type) })?;
         Ok(CurveType::from_i32(out_type).unwrap())
     }
 
-    pub(crate) fn set_curve_type(&self, index: i32, curve_type: CurveType) -> Result<()> {
+    pub fn set_curve_type(&self, index: i32, curve_type: CurveType) -> Result<()> {
         check_error(unsafe { ffi::EN_setcurvetype(self.ph, index, curve_type as i32) })
     }
 
-    fn get_curve_points(&self, index: i32) -> Result<Vec<(f64, f64)>> {
+    pub fn get_curve_points(&self, index: i32) -> Result<Vec<(f64, f64)>> {
         let len = self.get_curve_len(index)?;
         let mut out_id: Vec<std::ffi::c_char> = vec![0; MAX_ID_SIZE as usize + 1];
         let mut out_x = vec![0.0; len as usize];
@@ -142,7 +143,7 @@ impl EPANET {
             .collect())
     }
 
-    pub(crate) fn set_curve(&self, index: i32, values: &[(f64, f64)]) -> Result<()> {
+    pub fn set_curve(&self, index: i32, values: &[(f64, f64)]) -> Result<()> {
         let (mut x_vec, mut y_vec): (Vec<f64>, Vec<f64>) = values.iter().cloned().unzip();
 
         check_error(unsafe {
@@ -154,6 +155,16 @@ impl EPANET {
                 values.len() as i32,
             )
         })
+    }
+
+    pub fn get_curve_value(&self, index: i32, point_index: i32) -> Result<(f64, f64)> {
+        let (mut out_x, mut out_y) = (0f64, 0f64);
+        check_error( unsafe { EN_getcurvevalue(self.ph, index, point_index, &mut out_x, &mut out_y)})?;
+        Ok((out_x, out_y))
+    }
+
+    pub fn set_curve_value(&self, index: i32, point_index: i32, point: (f64, f64)) -> Result<()> {
+        check_error(unsafe{ EN_setcurvevalue(self.ph, index, point_index, point.0, point.1) })
     }
 }
 

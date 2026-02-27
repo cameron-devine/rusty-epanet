@@ -32,7 +32,7 @@ Functions available in `bindings.rs` but not yet wrapped with safe Rust methods.
 
 ### Curve
 
-- [ ] `EN_getcurvevalue` / `EN_setcurvevalue` - Individual point get/set (bulk get/set exists via `EN_getcurve`/`EN_setcurve`)
+- [x] `EN_getcurvevalue` / `EN_setcurvevalue` - Individual point get/set (bulk get/set exists via `EN_getcurve`/`EN_setcurve`)
 
 ### Rule
 
@@ -122,7 +122,7 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 
 ### Refactor Control and Curve to match
 
-- [ ] Refactor `Control<'a>` to use the same pattern (struct owns data, `update()`/`delete(self)` call FFI directly instead of delegating to `project.update_control()`)
+- [x] Refactor `Control<'a>` to use the same pattern (struct owns data, `update()`/`delete(self)` call FFI directly instead of delegating to `project.update_control()`)
 - [x] Refactor `Curve<'a>` to match
 
 ### Pattern
