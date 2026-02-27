@@ -161,7 +161,7 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 - [ ] Distinguish warnings (codes 1-99) from errors (codes >= 100) in `EPANETError`
 - [ ] Consider `EPANETWarning` type or `check_error` variant that allows warnings through
 - [ ] Add `EPANETError::is_warning()` / `is_error()` helpers
-- [ ] Standardize error checking pattern: some wrappers use `check_error`/`check_error_with_context`, others use manual `if result == 0` / `match` blocks - pick one and be consistent
+- [x] Standardize error checking pattern: some wrappers use `check_error`/`check_error_with_context`, others use manual `if result == 0` / `match` blocks - pick one and be consistent
 
 ## Testing
 
@@ -196,4 +196,4 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 - [ ] Add CI workflow (GitHub Actions) for build + test on Linux/Windows/macOS
 - [ ] Consider static linking option (`cargo:rustc-link-lib=static=epanet2`) to avoid DLL distribution
 - [ ] Add cargo features for optional static vs dynamic linking
-- [ ] Investigate why `EN_gettag`/`EN_settag` are missing from bindgen output (may need wrapper.h update)
+- [x] Investigate why `EN_gettag`/`EN_settag` are missing from bindgen output (may need wrapper.h update)

@@ -16,7 +16,7 @@ impl EPANET {
         let mut out_pmin = 0.0;
         let mut out_preq = 0.0;
         let mut out_pexp = 0.0;
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_getdemandmodel(
                 self.ph,
                 &mut out_type,
@@ -24,21 +24,17 @@ impl EPANET {
                 &mut out_preq,
                 &mut out_pexp,
             )
-        };
-        if result == 0 {
-            Ok(DemandModelInfo {
-                demand_type: DemandModel::from_i32(out_type).unwrap(),
-                pressure_min: out_pmin,
-                pressure_required: out_preq,
-                pressure_exponent: out_pexp,
-            })
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })?;
+        Ok(DemandModelInfo {
+            demand_type: DemandModel::from_i32(out_type).unwrap(),
+            pressure_min: out_pmin,
+            pressure_required: out_preq,
+            pressure_exponent: out_pexp,
+        })
     }
 
     pub fn set_demand_model(&self, model: DemandModelInfo) -> Result<()> {
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_setdemandmodel(
                 self.ph,
                 model.demand_type as i32,
@@ -46,12 +42,7 @@ impl EPANET {
                 model.pressure_required,
                 model.pressure_exponent,
             )
-        };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })
     }
 
     pub fn add_demand(
@@ -64,7 +55,7 @@ impl EPANET {
         let c_demand_pattern = CString::new(demand_pattern).unwrap();
         let c_demand_name = CString::new(demand_name).unwrap();
 
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_adddemand(
                 self.ph,
                 node_index,
@@ -72,77 +63,45 @@ impl EPANET {
                 c_demand_pattern.as_ptr(),
                 c_demand_name.as_ptr(),
             )
-        };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })
     }
 
     pub fn delete_demand(&self, node_index: i32, demand_index: i32) -> Result<()> {
-        let result = unsafe { ffi::EN_deletedemand(self.ph, node_index, demand_index) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_deletedemand(self.ph, node_index, demand_index) })
     }
 
     pub fn get_demand_index(&self, node_index: i32, demand_name: &str) -> Result<i32> {
         let mut out_index = 0;
         let c_demand_name = CString::new(demand_name).unwrap();
 
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_getdemandindex(self.ph, node_index, c_demand_name.as_ptr(), &mut out_index)
-        };
-        if result == 0 {
-            Ok(out_index)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })?;
+        Ok(out_index)
     }
 
     pub fn get_demand_count(&self, node_index: i32) -> Result<i32> {
         let mut out_count = 0;
-        let result = unsafe { ffi::EN_getnumdemands(self.ph, node_index, &mut out_count) };
-        if result == 0 {
-            Ok(out_count)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_getnumdemands(self.ph, node_index, &mut out_count) })?;
+        Ok(out_count)
     }
 
     pub fn get_base_demand(&self, node_index: i32, demand_index: i32) -> Result<f64> {
         let mut out_demand = 0.0;
-        let result =
-            unsafe { ffi::EN_getbasedemand(self.ph, node_index, demand_index, &mut out_demand) };
-        if result == 0 {
-            Ok(out_demand)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_getbasedemand(self.ph, node_index, demand_index, &mut out_demand) })?;
+        Ok(out_demand)
     }
 
     pub fn set_base_demand(&self, node_index: i32, demand_index: i32, demand: f64) -> Result<()> {
-        let result = unsafe { ffi::EN_setbasedemand(self.ph, node_index, demand_index, demand) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_setbasedemand(self.ph, node_index, demand_index, demand) })
     }
 
     pub fn get_demand_pattern(&self, node_index: i32, demand_index: i32) -> Result<i32> {
         let mut out_pattern = 0;
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_getdemandpattern(self.ph, node_index, demand_index, &mut out_pattern)
-        };
-        if result == 0 {
-            Ok(out_pattern)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })?;
+        Ok(out_pattern)
     }
 
     pub fn set_demand_pattern(
@@ -151,40 +110,24 @@ impl EPANET {
         demand_index: i32,
         pattern_index: i32,
     ) -> Result<()> {
-        let result =
-            unsafe { ffi::EN_setdemandpattern(self.ph, node_index, demand_index, pattern_index) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_setdemandpattern(self.ph, node_index, demand_index, pattern_index) })
     }
 
     pub fn get_demand_name(&self, node_index: i32, demand_index: i32) -> Result<String> {
         let mut out_name: Vec<c_char> = vec![0; MAX_ID_SIZE as usize + 1usize];
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_getdemandname(self.ph, node_index, demand_index, out_name.as_mut_ptr())
-        };
-        if result == 0 {
-            let name = unsafe { std::ffi::CStr::from_ptr(out_name.as_ptr()) }
-                .to_string_lossy()
-                .trim_end()
-                .to_string();
-            Ok(name)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })?;
+        let name = unsafe { std::ffi::CStr::from_ptr(out_name.as_ptr()) }
+            .to_string_lossy()
+            .trim_end()
+            .to_string();
+        Ok(name)
     }
 
     pub fn set_demand_name(&self, node_index: i32, demand_index: i32, name: &str) -> Result<()> {
         let c_name = CString::new(name).expect("Demand name contains null bytes");
-        let result =
-            unsafe { ffi::EN_setdemandname(self.ph, node_index, demand_index, c_name.as_ptr()) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_setdemandname(self.ph, node_index, demand_index, c_name.as_ptr()) })
     }
 }
 

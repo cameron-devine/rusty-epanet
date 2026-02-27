@@ -14,22 +14,11 @@ use std::ffi::c_char;
 impl EPANET {
     pub fn add_rule(&self, rule: &str) -> Result<()> {
         let c_rule = std::ffi::CString::new(rule).unwrap();
-        let result =
-            unsafe { ffi::EN_addrule(self.ph, c_rule.as_ptr() as *mut std::os::raw::c_char) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_addrule(self.ph, c_rule.as_ptr() as *mut std::os::raw::c_char) })
     }
 
     pub fn delete_rule(&self, index: i32) -> Result<()> {
-        let result = unsafe { ffi::EN_deleterule(self.ph, index) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_deleterule(self.ph, index) })
     }
 
     pub fn get_rule(&self, index: i32) -> Result<Rule> {
@@ -39,7 +28,7 @@ impl EPANET {
         let mut out_then_action_count = 0;
         let mut out_else_action_count = 0;
         let mut out_priority = 0.0;
-        let get_rule_result = unsafe {
+        check_error(unsafe {
             ffi::EN_getrule(
                 self.ph,
                 index,
@@ -48,11 +37,7 @@ impl EPANET {
                 &mut out_else_action_count,
                 &mut out_priority,
             )
-        };
-
-        if get_rule_result != 0 {
-            return Err(EPANETError::from(get_rule_result));
-        }
+        })?;
 
         let mut premises = Vec::new();
         for i in 1..=out_premise_count {
@@ -102,16 +87,12 @@ impl EPANET {
 
     fn get_rule_id(&self, rule_index: i32) -> Result<String> {
         let mut out_rule_id: Vec<c_char> = vec![0; MAX_ID_SIZE as usize + 1usize];
-        let result = unsafe { ffi::EN_getruleID(self.ph, rule_index, out_rule_id.as_mut_ptr()) };
-        if result == 0 {
-            let id = unsafe { std::ffi::CStr::from_ptr(out_rule_id.as_ptr()) }
-                .to_string_lossy()
-                .trim_end()
-                .to_string();
-            Ok(id)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_getruleID(self.ph, rule_index, out_rule_id.as_mut_ptr()) })?;
+        let id = unsafe { std::ffi::CStr::from_ptr(out_rule_id.as_ptr()) }
+            .to_string_lossy()
+            .trim_end()
+            .to_string();
+        Ok(id)
     }
     fn get_premise(&self, rule_index: i32, premise_index: i32) -> Result<Premise> {
         let mut out_logop = 0;
@@ -122,7 +103,7 @@ impl EPANET {
         let mut out_status = 0;
         let mut out_value = 0.0;
 
-        let premise_result = unsafe {
+        check_error(unsafe {
             ffi::EN_getpremise(
                 self.ph,
                 rule_index,
@@ -135,7 +116,7 @@ impl EPANET {
                 &mut out_status,
                 &mut out_value,
             )
-        };
+        })?;
 
         let logical_operator =
             LogicalOperator::from_i32(out_logop).expect("Invalid logical operator");
@@ -146,26 +127,22 @@ impl EPANET {
         let status: Option<RuleStatus> = RuleStatus::from_i32(out_status).or(None);
         let value = out_value;
 
-        if premise_result == 0 {
-            Ok(Premise {
-                logical_operator,
-                rule_object,
-                object_index,
-                variable,
-                rule_operator,
-                status,
-                value,
-            })
-        } else {
-            Err(EPANETError::from(premise_result))
-        }
+        Ok(Premise {
+            logical_operator,
+            rule_object,
+            object_index,
+            variable,
+            rule_operator,
+            status,
+            value,
+        })
     }
 
     fn get_then_action(&self, rule_index: i32, action_index: i32) -> Result<ActionClause> {
         let mut out_link_index = 0;
         let mut out_status = 0;
         let mut out_setting = 0.0;
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_getthenaction(
                 self.ph,
                 rule_index,
@@ -174,23 +151,19 @@ impl EPANET {
                 &mut out_status,
                 &mut out_setting,
             )
-        };
-        if result == 0 {
-            Ok(ActionClause {
-                link_index: out_link_index,
-                status: RuleStatus::from_i32(out_status).expect("Invalid rule status"),
-                setting: out_setting,
-            })
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })?;
+        Ok(ActionClause {
+            link_index: out_link_index,
+            status: RuleStatus::from_i32(out_status).expect("Invalid rule status"),
+            setting: out_setting,
+        })
     }
 
     fn get_else_action(&self, rule_index: i32, action_index: i32) -> Result<ActionClause> {
         let mut out_link_index = 0;
         let mut out_status = 0;
         let mut out_setting = 0.0;
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_getelseaction(
                 self.ph,
                 rule_index,
@@ -199,26 +172,18 @@ impl EPANET {
                 &mut out_status,
                 &mut out_setting,
             )
-        };
-        if result == 0 {
-            Ok(ActionClause {
-                link_index: out_link_index,
-                status: RuleStatus::from_i32(out_status).expect("Invalid rule status"),
-                setting: out_setting,
-            })
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })?;
+        Ok(ActionClause {
+            link_index: out_link_index,
+            status: RuleStatus::from_i32(out_status).expect("Invalid rule status"),
+            setting: out_setting,
+        })
     }
 
     fn get_rule_enabled(&self, rule_index: i32) -> Result<bool> {
         let mut out_enabled = 0;
-        let result = unsafe { ffi::EN_getruleenabled(self.ph, rule_index, &mut out_enabled) };
-        if result == 0 {
-            Ok(out_enabled != 0)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_getruleenabled(self.ph, rule_index, &mut out_enabled) })?;
+        Ok(out_enabled != 0)
     }
 }
 

@@ -219,27 +219,14 @@ impl EPANET {
     }
 
     pub fn get_link_values(&self, property: LinkProperty) -> Result<Vec<f64>> {
-        let link_count = match self.get_count(LinkCount) {
-            Ok(count) => count,
-            Err(e) => return Err(e),
-        };
+        let link_count = self.get_count(LinkCount)?;
         let mut values: Vec<f64> = vec![0.0; link_count as usize];
-        let result =
-            unsafe { ffi::EN_getlinkvalues(self.ph, property as i32, values.as_mut_ptr()) };
-        if result == 0 {
-            Ok(values)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_getlinkvalues(self.ph, property as i32, values.as_mut_ptr()) })?;
+        Ok(values)
     }
 
     pub fn set_link_value(&self, index: i32, property: LinkProperty, value: f64) -> Result<()> {
-        let result = unsafe { ffi::EN_setlinkvalue(self.ph, index, property as i32, value) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_setlinkvalue(self.ph, index, property as i32, value) })
     }
 
     pub fn set_pipe_data(
@@ -250,13 +237,7 @@ impl EPANET {
         roughness: f64,
         minor_loss: f64,
     ) -> Result<()> {
-        let result =
-            unsafe { ffi::EN_setpipedata(self.ph, index, length, diameter, roughness, minor_loss) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_setpipedata(self.ph, index, length, diameter, roughness, minor_loss) })
     }
 
     pub fn get_pump_type(&self, index: i32) -> Result<PumpType> {

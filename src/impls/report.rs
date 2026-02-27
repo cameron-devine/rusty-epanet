@@ -21,12 +21,7 @@ impl EPANET {
     /// # See Also
     /// - EN_clearreport (EPANET C API)
     pub fn clear_report(&self) -> Result<()> {
-        let result = unsafe { ffi::EN_clearreport(self.ph) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_clearreport(self.ph) })
     }
 
     /// Copies the current report to a specified file.
@@ -46,12 +41,7 @@ impl EPANET {
     /// - EN_copyreport (EPANET C API)
     pub fn copy_report(&self, file_name: &str) -> Result<()> {
         let c_file_name = std::ffi::CString::new(file_name).expect("file_name contains null bytes");
-        let result = unsafe { ffi::EN_copyreport(self.ph, c_file_name.as_ptr()) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_copyreport(self.ph, c_file_name.as_ptr()) })
     }
 
     /// Retrieves the error message for a given error code.
@@ -71,15 +61,11 @@ impl EPANET {
     /// - EN_geterror (EPANET C API)
     pub fn get_error(&self, error_code: i32) -> Result<String> {
         let mut error_message = [0 as c_char; MAX_MSG_SIZE as usize + 1];
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_geterror(error_code, error_message.as_mut_ptr(), MAX_MSG_SIZE as i32)
-        };
-        if result == 0 {
-            let s = unsafe { CStr::from_ptr(error_message.as_ptr()) };
-            Ok(s.to_string_lossy().into_owned())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })?;
+        let s = unsafe { CStr::from_ptr(error_message.as_ptr()) };
+        Ok(s.to_string_lossy().into_owned())
     }
 
     /// Retrieves the result index for a given object type and index.
@@ -100,14 +86,10 @@ impl EPANET {
     /// - EN_getresultindex (EPANET C API)
     pub fn get_result_index(&self, object_type: ObjectType, object_index: i32) -> Result<i32> {
         let mut index: i32 = -1;
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_getresultindex(self.ph, object_type as i32, object_index, &mut index)
-        };
-        if result == 0 {
-            Ok(index)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })?;
+        Ok(index)
     }
 
     /// Retrieves a specific analysis statistic from EPANET.
@@ -127,12 +109,8 @@ impl EPANET {
     /// - EN_getstatistic (EPANET C API)
     pub fn get_statistic(&self, stat_type: AnalysisStatistic) -> Result<f64> {
         let mut value: f64 = 0.0;
-        let result = unsafe { ffi::EN_getstatistic(self.ph, stat_type as i32, &mut value) };
-        if result == 0 {
-            Ok(value)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_getstatistic(self.ph, stat_type as i32, &mut value) })?;
+        Ok(value)
     }
 
     /// Retrieves the version of the EPANET library in use.
@@ -148,12 +126,8 @@ impl EPANET {
     /// - EN_getversion (EPANET C API)
     pub fn get_version(&self) -> Result<i32> {
         let mut out_version = 0;
-        let result = unsafe { ffi::EN_getversion(&mut out_version) };
-        if result == 0 {
-            Ok(out_version)
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_getversion(&mut out_version) })?;
+        Ok(out_version)
     }
 
     /// Generates a report for the current simulation.
@@ -169,12 +143,7 @@ impl EPANET {
     /// # See Also
     /// - EN_report (EPANET C API)
     pub fn report(&self) -> Result<()> {
-        let result = unsafe { ffi::EN_report(self.ph) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_report(self.ph) })
     }
 
     /// Resets the report state in EPANET.
@@ -189,12 +158,7 @@ impl EPANET {
     /// # See Also
     /// - EN_resetreport (EPANET C API)
     pub fn reset_report(&self) -> Result<()> {
-        let result = unsafe { ffi::EN_resetreport(self.ph) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_resetreport(self.ph) })
     }
 
     /// Sets the format for the report output.
@@ -227,12 +191,7 @@ impl EPANET {
     /// - EN_setreport (EPANET C API)
     pub fn set_report(&self, format: &str) -> Result<()> {
         let c_format = CString::new(format).expect("Title contains null bytes");
-        let result = unsafe { ffi::EN_setreport(self.ph, c_format.as_ptr()) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_setreport(self.ph, c_format.as_ptr()) })
     }
 
     // todo: implement this
@@ -309,12 +268,7 @@ impl EPANET {
     */
 
     pub fn set_status_report(&self, level: StatusReport) -> Result<()> {
-        let result = unsafe { ffi::EN_setstatusreport(self.ph, level as i32) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_setstatusreport(self.ph, level as i32) })
     }
 
     /// Retrieves information about the next event in the simulation timeline.
@@ -333,18 +287,14 @@ impl EPANET {
         let mut event_type = 0;
         let mut duration = 0;
         let mut element_index = 0;
-        let result = unsafe {
+        check_error(unsafe {
             ffi::EN_timetonextevent(self.ph, &mut event_type, &mut duration, &mut element_index)
-        };
-        if result == 0 {
-            Ok(Event {
-                event_type: TimestepEvent::from_i32(event_type).unwrap(),
-                duration: duration as u64,
-                element_index,
-            })
-        } else {
-            Err(EPANETError::from(result))
-        }
+        })?;
+        Ok(Event {
+            event_type: TimestepEvent::from_i32(event_type).unwrap(),
+            duration: duration as u64,
+            element_index,
+        })
     }
 
     /// Writes a line to the report output.
@@ -364,11 +314,6 @@ impl EPANET {
     /// - EN_writeline (EPANET C API)
     pub fn write_line_to_report(&self, line: &str) -> Result<()> {
         let c_line = CString::new(line).expect("line contains null bytes");
-        let result = unsafe { ffi::EN_writeline(self.ph, c_line.as_ptr()) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_writeline(self.ph, c_line.as_ptr()) })
     }
 }
