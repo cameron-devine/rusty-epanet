@@ -4,8 +4,8 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::analysis::InitHydOption;
 use crate::EPANET;
+use crate::types::analysis::InitHydOption;
 use std::mem::MaybeUninit;
 
 /// ## Hydraulic Analysis APIs

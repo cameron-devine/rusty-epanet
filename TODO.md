@@ -57,18 +57,18 @@ The solvers should **borrow** `&'a EPANET` (not own it), so the project remains 
 
 ### HydraulicSolver (rewrite types/analysis.rs)
 
-- [ ] Change `HydraulicSolver` from owning `pub ph: EPANET` to borrowing `&'a EPANET`
-- [ ] Add `EPANET::hydraulic_solver(&self) -> HydraulicSolver<'_, Closed>` entry point
-- [ ] Wire `Closed::solve()` -> `Solved` via `EN_solveH` (return `Result`)
-- [ ] Wire `Closed::init(InitHydOption)` -> `Initialized` via `EN_openH` + `EN_initH` (return `Result`)
-- [ ] Add `Initialized::run()` -> `(Running, f64)` via `EN_runH` (returns current time)
-- [ ] Add `Running::next()` -> `Result<StepResult>` via `EN_nextH` + `EN_runH`
-- [ ] Define `StepResult<'a>` enum: `Continue(HydraulicSolver<Running>)` | `Done(HydraulicSolver<Solved>)` to encode simulation completion in the type system
-- [ ] Wire `Solved::save()` via `EN_saveH`
-- [ ] Wire `Solved::close()` via `EN_closeH`
-- [ ] Add `project(&self) -> &EPANET` accessor on `Running` and `Solved` states for reading results mid-simulation
-- [ ] Implement `Drop` for all states to call `EN_closeH` as safety net
-- [ ] All state transitions return `Result<>`
+- [x] Change `HydraulicSolver` from owning `pub ph: EPANET` to borrowing `&'a EPANET`
+- [x] Add `EPANET::hydraulic_solver(&self) -> HydraulicSolver<'_, Closed>` entry point
+- [x] Wire `Closed::solve()` -> `Solved` via `EN_solveH` (return `Result`)
+- [x] Wire `Closed::init(InitHydOption)` -> `Initialized` via `EN_openH` + `EN_initH` (return `Result`)
+- [x] Add `Initialized::run()` -> `(Running, f64)` via `EN_runH` (returns current time)
+- [x] Add `Running::next()` -> `Result<StepResult>` via `EN_nextH` + `EN_runH`
+- [x] Define `StepResult<'a>` enum: `Continue(HydraulicSolver<Running>)` | `Done(HydraulicSolver<Solved>)` to encode simulation completion in the type system
+- [x] Wire `Solved::save()` via `EN_saveH`
+- [x] Wire `Solved::close()` via `EN_closeH`
+- [x] Add `project(&self) -> &EPANET` accessor on `Running` and `Solved` states for reading results mid-simulation
+- [x] Implement `Drop` for all states to call `EN_closeH` as safety net
+- [x] All state transitions return `Result<>`
 
 ### QualitySolver (new, same pattern)
 
