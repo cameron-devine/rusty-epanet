@@ -36,6 +36,74 @@ pub struct Control<'a> {
 }
 
 impl<'a> Control<'a> {
+    /// Creates a new low-level control that acts when pressure or tank level drops below a setpoint.
+    ///
+    /// # Parameters
+    /// - `project`: Reference to the EPANET project
+    /// - `link_index`: Index of the link to control
+    /// - `setting`: Control setting applied to the link (0.0 for closed, 1.0 for open, or speed multiplier for pumps)
+    /// - `node_index`: Index of the node (tank or junction) whose level/pressure triggers the control
+    /// - `level`: Level or pressure setpoint that triggers the control
+    pub fn new_lowlevel(
+        project: &'a EPANET,
+        link_index: i32,
+        setting: f64,
+        node_index: i32,
+        level: f64,
+    ) -> crate::epanet_error::Result<Self> {
+        project.add_control(ControlType::LowLevel, link_index, setting, node_index, level, true)
+    }
+
+    /// Creates a new high-level control that acts when pressure or tank level rises above a setpoint.
+    ///
+    /// # Parameters
+    /// - `project`: Reference to the EPANET project
+    /// - `link_index`: Index of the link to control
+    /// - `setting`: Control setting applied to the link (0.0 for closed, 1.0 for open, or speed multiplier for pumps)
+    /// - `node_index`: Index of the node (tank or junction) whose level/pressure triggers the control
+    /// - `level`: Level or pressure setpoint that triggers the control
+    pub fn new_hilevel(
+        project: &'a EPANET,
+        link_index: i32,
+        setting: f64,
+        node_index: i32,
+        level: f64,
+    ) -> crate::epanet_error::Result<Self> {
+        project.add_control(ControlType::HiLevel, link_index, setting, node_index, level, true)
+    }
+
+    /// Creates a new timer control that acts at a prescribed elapsed amount of time.
+    ///
+    /// # Parameters
+    /// - `project`: Reference to the EPANET project
+    /// - `link_index`: Index of the link to control
+    /// - `setting`: Control setting applied to the link (0.0 for closed, 1.0 for open, or speed multiplier for pumps)
+    /// - `time`: Elapsed time in seconds when the control activates
+    pub fn new_timer(
+        project: &'a EPANET,
+        link_index: i32,
+        setting: f64,
+        time: f64,
+    ) -> crate::epanet_error::Result<Self> {
+        project.add_control(ControlType::Timer, link_index, setting, 0, time, true)
+    }
+
+    /// Creates a new time-of-day control that acts at a particular time of day.
+    ///
+    /// # Parameters
+    /// - `project`: Reference to the EPANET project
+    /// - `link_index`: Index of the link to control
+    /// - `setting`: Control setting applied to the link (0.0 for closed, 1.0 for open, or speed multiplier for pumps)
+    /// - `time_of_day`: Time of day in seconds since midnight when the control activates
+    pub fn new_timeofday(
+        project: &'a EPANET,
+        link_index: i32,
+        setting: f64,
+        time_of_day: f64,
+    ) -> crate::epanet_error::Result<Self> {
+        project.add_control(ControlType::TimeOfDay, link_index, setting, 0, time_of_day, true)
+    }
+
     /// Returns the EPANET project index of the control.
     pub fn index(&self) -> i32 {
         self.index
@@ -47,6 +115,8 @@ impl<'a> Control<'a> {
     }
 
     /// Deletes this control from the EPANET project.
+    ///
+    /// This method consumes the control, preventing further use after deletion.
     pub fn delete(self) -> crate::epanet_error::Result<()> {
         self.project.delete_control(self)
     }
