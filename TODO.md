@@ -72,14 +72,14 @@ The solvers should **borrow** `&'a EPANET` (not own it), so the project remains 
 
 ### QualitySolver (new, same pattern)
 
-- [ ] Define `QualitySolver<'a, State>` borrowing `&'a EPANET` with states: `Closed`, `Initialized`, `Running`, `Solved`
-- [ ] Add `EPANET::quality_solver(&self) -> QualitySolver<'_, Closed>` entry point
-- [ ] `Closed::solve()` -> `Solved` via `EN_solveQ`
-- [ ] `Closed::init()` -> `Initialized` via `EN_openQ` + `EN_initQ`
-- [ ] `Initialized::run()` -> `Running` via `EN_runQ`
-- [ ] `Running::next()` -> `StepResult` via `EN_nextQ` (or `EN_stepQ`)
-- [ ] `Solved::close()` -> drop via `EN_closeQ`
-- [ ] `Drop` impl calls `EN_closeQ`
+- [x] Define `QualitySolver<'a, State>` borrowing `&'a EPANET` with states: `Closed`, `Initialized`, `Running`, `Solved`
+- [x] Add `EPANET::quality_solver(&self) -> QualitySolver<'_, Closed>` entry point
+- [x] `Closed::solve()` -> `Solved` via `EN_solveQ`
+- [x] `Closed::init()` -> `Initialized` via `EN_openQ` + `EN_initQ`
+- [x] `Initialized::run()` -> `Running` via `EN_runQ`
+- [x] `Running::next()` -> `StepResult` via `EN_nextQ` (or `EN_stepQ`)
+- [x] `Solved::close()` -> drop via `EN_closeQ`
+- [x] `Drop` impl calls `EN_closeQ`
 
 ## Domain Structs
 
@@ -127,8 +127,8 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 
 ### Pattern
 
-- [ ] `Pattern<'a>` struct: `&'a EPANET`, index, id, cached multipliers
-- [ ] `update()` / `delete(self)` methods
+- [x] `Pattern<'a>` struct: `&'a EPANET`, index, id, cached multipliers
+- [x] `update()` / `delete(self)` methods
 
 ### Demand
 

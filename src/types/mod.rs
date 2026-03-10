@@ -5,6 +5,7 @@ pub mod demand;
 pub mod link;
 pub mod node;
 pub mod options;
+pub mod pattern;
 pub mod report;
 pub mod rule;
 
@@ -12,6 +13,7 @@ pub use control::Control;
 pub use curve::Curve;
 pub use num_derive::FromPrimitive;
 pub use num_traits::FromPrimitive;
+pub use pattern::Pattern;
 pub use report::ReportCallback;
 pub use rule::Rule;
 
