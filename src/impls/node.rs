@@ -522,7 +522,7 @@ mod tests {
         assert_eq!(ph.get_node_value(index, TankLevel).unwrap(), 120.0);
         assert_eq!(ph.get_node_value(index, MinLevel).unwrap(), 100.0);
         assert_eq!(ph.get_node_value(index, MaxLevel).unwrap(), 150.0);
-        assert_eq!(ph.get_node_value(index, TankDiam).unwrap(), 50.5);
+        assert!(approx_eq(ph.get_node_value(index, TankDiam).unwrap(), 50.5, 1e-10));
         assert!(approx_eq(
             ph.get_node_value(index, MinVolume).unwrap(),
             200296.167,

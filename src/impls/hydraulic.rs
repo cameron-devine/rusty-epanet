@@ -381,6 +381,8 @@ mod tests {
         result = ph.solve_q();
         assert_eq!(result, Ok(()));
 
+        // Drop the project handle to release the file before cleanup
+        drop(ph);
         // Clean up the created file after the test
         fs::remove_file(hyd_file).expect("Failed to remove the hydraulics file");
     }
