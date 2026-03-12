@@ -151,9 +151,9 @@ impl EPANET {
         let rpt = CString::new(report_path).expect("report_path contains null bytes");
         let out = CString::new(out_path).expect("out_path contains null bytes");
 
-        // Step 3: Open the project
+        // Step 3: Open the project, allowing warning codes (1-99) through
         let result = unsafe { ffi::EN_open(ph, inp.as_ptr(), rpt.as_ptr(), out.as_ptr()) };
-        if let Err(e) = check_error(result) {
+        if let Err(e) = check_error_allow_warnings(result) {
             unsafe { ffi::EN_deleteproject(ph) }; // Clean up on failure
             return Err(e);
         }

@@ -6,6 +6,7 @@ use crate::bindings as ffi;
 use crate::epanet_error::*;
 use crate::types::{CountType, ObjectType, MAX_MSG_SIZE, MAX_TITLE_SIZE};
 use crate::EPANET;
+use std::cell::RefCell;
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::mem::MaybeUninit;
 
@@ -127,5 +128,59 @@ impl EPANET {
     pub fn save_inp_file(&self, file_name: &str) -> Result<()> {
         let inp_file_c = CString::new(file_name).expect("inp_file contains null bytes");
         check_error(unsafe { ffi::EN_saveinpfile(self.ph, inp_file_c.as_ptr()) })
+    }
+
+    /// Runs a complete EPANET simulation with a safe Rust closure as progress callback.
+    ///
+    /// This is a safe wrapper around [`run_project`](Self::run_project) that accepts a
+    /// regular Rust closure instead of an `unsafe extern "C" fn`.
+    ///
+    /// # Parameters
+    /// - `inp_file`: Path to the EPANET input file.
+    /// - `report_file`: Path for the output report file.
+    /// - `out_file`: Path for the binary output file.
+    /// - `cb`: A closure that receives progress messages as `&str`.
+    ///
+    /// # Returns
+    /// - `Ok(())` on success.
+    /// - `Err(EPANETError)` if the simulation fails.
+    ///
+    /// # Safety
+    /// Uses a thread-local trampoline internally because the EPANET C callback signature
+    /// (`void (*)(char*)`) does not support a user-data pointer. This means the callback
+    /// is not reentrant — calling this method concurrently on the same thread will
+    /// overwrite the stored closure. This is safe in practice because `EN_runproject`
+    /// is a blocking call.
+    pub fn run_project_with_callback<F: FnMut(&str)>(
+        &self,
+        inp_file: &str,
+        report_file: &str,
+        out_file: &str,
+        mut cb: F,
+    ) -> Result<()> {
+        thread_local! {
+            static CALLBACK: RefCell<Option<*mut ()>> = RefCell::new(None);
+        }
+
+        unsafe extern "C" fn trampoline(msg: *mut c_char) {
+            CALLBACK.with(|cell| {
+                if let Some(ptr) = *cell.borrow() {
+                    let cb = &mut **(ptr as *mut *mut dyn FnMut(&str));
+                    let s = CStr::from_ptr(msg).to_string_lossy();
+                    cb(s.as_ref());
+                }
+            });
+        }
+
+        // SAFETY: We store a thin pointer (to a stack-local fat pointer) in the
+        // thread-local. The pointer is only used during the synchronous
+        // EN_runproject call below and cleared immediately after, so both
+        // `cb_trait_ref` and `cb` are guaranteed to outlive their use.
+        let mut cb_trait_ref: *mut dyn FnMut(&str) = &mut cb;
+        let cb_ptr: *mut *mut dyn FnMut(&str) = &mut cb_trait_ref;
+        CALLBACK.with(|cell| *cell.borrow_mut() = Some(cb_ptr as *mut ()));
+        let result = self.run_project(inp_file, report_file, out_file, Some(trampoline));
+        CALLBACK.with(|cell| *cell.borrow_mut() = None);
+        result
     }
 }

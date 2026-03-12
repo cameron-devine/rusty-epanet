@@ -150,11 +150,11 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 
 ## API Ergonomics
 
-- [ ] Make `add_link` public and wrap properly (currently no `EN_addlink` wrapper)
-- [ ] `run_project` callback: provide a safe closure wrapper instead of `unsafe extern "C" fn`
-- [ ] Consider `&str` -> index resolution helpers: many APIs take indices but users think in IDs
-- [ ] `with_inp_file_allow_errors` currently has same implementation as `with_inp_file` - differentiate by handling warning-level error codes (codes 1-99)
-- [ ] Expose `EN_getpatternindex` publicly (pattern module has add/delete/get by index but no index-by-ID lookup)
+- [x] Make `add_link` public and wrap properly (currently no `EN_addlink` wrapper)
+- [x] `run_project` callback: provide a safe closure wrapper instead of `unsafe extern "C" fn`
+- [x] Consider `&str` -> index resolution helpers: many APIs take indices but users think in IDs
+- [x] `with_inp_file_allow_errors` currently has same implementation as `with_inp_file` - differentiate by handling warning-level error codes (codes 1-99)
+- [x] Expose `EN_getpatternindex` publicly (pattern module has add/delete/get by index but no index-by-ID lookup)
 
 ## Error Handling
 

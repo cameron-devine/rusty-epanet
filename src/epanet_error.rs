@@ -96,3 +96,15 @@ pub(crate) fn check_error_with_context(code: i32, context: impl Into<String>) ->
         Err(EPANETError::from(code).with_context(context))
     }
 }
+
+/// Variant of [`check_error`] that allows warning codes (1-99) through.
+///
+/// EPANET uses codes 1-99 for warnings and codes >= 100 for errors.
+/// This helper returns `Ok(())` for codes 0-99 and `Err` for codes >= 100.
+pub(crate) fn check_error_allow_warnings(code: i32) -> Result<()> {
+    if code < 100 {
+        Ok(())
+    } else {
+        Err(EPANETError::from(code))
+    }
+}
