@@ -11,6 +11,7 @@ pub mod rule;
 
 pub use control::Control;
 pub use curve::Curve;
+pub use demand::Demand;
 pub use num_derive::FromPrimitive;
 pub use num_traits::FromPrimitive;
 pub use pattern::Pattern;

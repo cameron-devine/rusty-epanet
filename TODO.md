@@ -132,7 +132,7 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 
 ### Demand
 
-- [ ] `Demand<'a>` struct: `&'a EPANET`, node_index, demand_category_index, base_demand, pattern, name
+- [x] `Demand<'a>` struct: `&'a EPANET`, node_index, demand_category_index, base_demand, pattern, name
 
 ## Collection / Iterator Support
 
