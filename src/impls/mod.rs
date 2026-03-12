@@ -1,3 +1,4 @@
+pub mod collections;
 pub mod control;
 pub mod curve;
 pub mod demand;

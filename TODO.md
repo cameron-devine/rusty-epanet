@@ -136,17 +136,17 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 
 ## Collection / Iterator Support
 
-- [ ] `EPANET::nodes(&self) -> Result<Vec<Node>>` - fetch all nodes
-- [ ] `EPANET::links(&self) -> Result<Vec<Link>>` - fetch all links
-- [ ] `EPANET::pipes(&self) -> Result<Vec<Link>>` - filtered convenience (links where `is_pipe()`)
-- [ ] `EPANET::pumps(&self) -> Result<Vec<Link>>` - filtered convenience
-- [ ] `EPANET::valves(&self) -> Result<Vec<Link>>` - filtered convenience
-- [ ] `EPANET::junctions(&self) -> Result<Vec<Node>>` - filtered convenience
-- [ ] `EPANET::tanks(&self) -> Result<Vec<Node>>` - filtered convenience
-- [ ] `EPANET::patterns(&self) -> Result<Vec<Pattern>>` - fetch all patterns
-- [ ] `EPANET::curves(&self) -> Result<Vec<Curve>>` - fetch all curves
-- [ ] `EPANET::controls(&self) -> Result<Vec<Control>>` - fetch all controls
-- [ ] `EPANET::rules(&self) -> Result<Vec<Rule>>` - fetch all rules
+- [x] `EPANET::nodes(&self) -> Result<Vec<Node>>` - fetch all nodes
+- [x] `EPANET::links(&self) -> Result<Vec<Link>>` - fetch all links
+- [x] `EPANET::pipes(&self) -> Result<Vec<Link>>` - filtered convenience (links where `is_pipe()`)
+- [x] `EPANET::pumps(&self) -> Result<Vec<Link>>` - filtered convenience
+- [x] `EPANET::valves(&self) -> Result<Vec<Link>>` - filtered convenience
+- [x] `EPANET::junctions(&self) -> Result<Vec<Node>>` - filtered convenience
+- [x] `EPANET::tanks(&self) -> Result<Vec<Node>>` - filtered convenience
+- [x] `EPANET::patterns(&self) -> Result<Vec<Pattern>>` - fetch all patterns
+- [x] `EPANET::curves(&self) -> Result<Vec<Curve>>` - fetch all curves
+- [x] `EPANET::controls(&self) -> Result<Vec<Control>>` - fetch all controls
+- [x] `EPANET::rules(&self) -> Result<Vec<Rule>>` - fetch all rules
 
 ## API Ergonomics
 
