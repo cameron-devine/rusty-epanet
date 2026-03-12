@@ -36,14 +36,14 @@ Functions available in `bindings.rs` but not yet wrapped with safe Rust methods.
 
 ### Rule
 
-- [ ] `EN_setpremise` - Set all properties of a premise
-- [ ] `EN_setpremiseindex` - Set object index of a premise
-- [ ] `EN_setpremisestatus` - Set status of a premise
-- [ ] `EN_setpremisevalue` - Set value of a premise
-- [ ] `EN_setthenaction` - Set a then-action clause
-- [ ] `EN_setelseaction` - Set an else-action clause
-- [ ] `EN_setrulepriority` - Set rule priority
-- [ ] `EN_setruleenabled` - Enable/disable a rule (get exists, set missing)
+- [x] `EN_setpremise` - Set all properties of a premise
+- [x] `EN_setpremiseindex` - Set object index of a premise
+- [x] `EN_setpremisestatus` - Set status of a premise
+- [x] `EN_setpremisevalue` - Set value of a premise
+- [x] `EN_setthenaction` - Set a then-action clause
+- [x] `EN_setelseaction` - Set an else-action clause
+- [x] `EN_setrulepriority` - Set rule priority
+- [x] `EN_setruleenabled` - Enable/disable a rule (get exists, set missing)
 
 ### Report
 

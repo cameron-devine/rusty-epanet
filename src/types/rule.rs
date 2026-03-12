@@ -1,4 +1,5 @@
 use crate::bindings::*;
+use crate::EPANET;
 use num_derive::FromPrimitive;
 
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
@@ -57,16 +58,57 @@ pub enum LogicalOperator {
     OR = 3
 }
 
-/// Utility struct for rule based control information.
-pub struct Rule {
+/// RAII struct for rule-based control information.
+///
+/// `Rule` instances hold a reference to their owning [`EPANET`] project so
+/// that modifications can be synchronised back to the engine. After mutating
+/// any of the public fields, call [`Rule::update`] to commit those changes.
+/// The rule can also be removed from the model by consuming it with
+/// [`Rule::delete`].
+///
+/// **Note:** The C API does not support adding or removing individual premises
+/// or actions after rule creation. The `update()` method syncs the *existing*
+/// elements in place. Pushing or popping from `premises`, `then_actions`, or
+/// `else_actions` and calling `update()` will result in C API errors.
+#[derive(Debug, Clone)]
+pub struct Rule<'a> {
+    /// Reference to the owning EPANET project.
+    pub(crate) project: &'a EPANET,
+    /// EPANET project index of the rule.
+    pub(crate) index: i32,
     pub rule_id: String,
     pub premises: Vec<Premise>,
     pub then_actions: Vec<ActionClause>,
-    pub else_actions: Option<Vec<ActionClause>>,
-    pub priority: Option<u8>,
+    pub else_actions: Vec<ActionClause>,
+    pub priority: f64,
     pub enabled: bool,
 }
 
+impl<'a> Rule<'a> {
+    /// Returns the EPANET project index of the rule.
+    pub fn index(&self) -> i32 {
+        self.index
+    }
+
+    /// Synchronises any local changes of this rule back to the EPANET engine.
+    ///
+    /// This pushes all premises, then-actions, else-actions, priority, and
+    /// enabled status back to the C API. Only existing elements are updated;
+    /// the C API does not support adding or removing premises/actions after
+    /// rule creation.
+    pub fn update(&self) -> crate::epanet_error::Result<()> {
+        self.project.update_rule(self)
+    }
+
+    /// Deletes this rule from the EPANET project.
+    ///
+    /// This method consumes the rule, preventing further use after deletion.
+    pub fn delete(self) -> crate::epanet_error::Result<()> {
+        self.project.delete_rule(self.index)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Premise {
     pub logical_operator: LogicalOperator,
     pub rule_object: RuleObject,
@@ -76,6 +118,8 @@ pub struct Premise {
     pub status: Option<RuleStatus>,
     pub value: f64,
 }
+
+#[derive(Debug, Clone)]
 pub struct ActionClause {
     pub link_index: i32,
     pub status: RuleStatus,

@@ -173,7 +173,7 @@ impl EPANET {
     /// # Errors
     ///
     /// Returns an [`EPANETError`] if any rule cannot be retrieved.
-    pub fn rules(&self) -> Result<Vec<Rule>> {
+    pub fn rules(&self) -> Result<Vec<Rule<'_>>> {
         let count = self.get_count(CountType::RuleCount)?;
         let mut rules = Vec::with_capacity(count as usize);
         for i in 1..=count {
