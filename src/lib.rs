@@ -1,6 +1,7 @@
 pub mod types;
 use bindings as ffi;
 use epanet_error::*;
+use std::cell::Cell;
 use std::ffi::CString;
 use std::os::raw::c_void;
 use types::options::{FlowUnits, HeadLossType};
@@ -36,6 +37,10 @@ pub struct EPANET {
     /// The pointer is created via `Box::into_raw` and must be freed via
     /// `Box::from_raw` when the callback is replaced or the struct is dropped.
     report_callback_ptr: Option<*mut c_void>,
+
+    /// Whether the project has been closed by the C API (e.g. via `EN_runproject`).
+    /// When true, `Drop` skips calling `EN_close` to avoid double-free.
+    closed: Cell<bool>,
 }
 
 // Manual Debug implementation since *mut c_void doesn't implement Debug nicely
@@ -47,6 +52,7 @@ impl std::fmt::Debug for EPANET {
                 "report_callback_ptr",
                 &self.report_callback_ptr.map(|p| format!("{:p}", p)),
             )
+            .field("closed", &self.closed.get())
             .finish()
     }
 }
@@ -65,7 +71,7 @@ impl EPANET {
     /// # Errors
     /// Return an `EPANETError` if the underlying C function fails.
 
-    fn create_project_handle() -> Result<ffi::EN_Project> {
+    pub(crate) fn create_project_handle() -> Result<ffi::EN_Project> {
         let mut ph: ffi::EN_Project = std::ptr::null_mut();
         let result = unsafe { ffi::EN_createproject(&mut ph) };
         check_error(result)?;
@@ -112,6 +118,7 @@ impl EPANET {
         Ok(Self {
             ph,
             report_callback_ptr: None,
+            closed: Cell::new(false),
         })
     }
 
@@ -135,6 +142,7 @@ impl EPANET {
         Ok(Self {
             ph,
             report_callback_ptr: None,
+            closed: Cell::new(false),
         })
     }
 
@@ -162,6 +170,7 @@ impl EPANET {
         Ok(Self {
             ph,
             report_callback_ptr: None,
+            closed: Cell::new(false),
         })
     }
 }
@@ -185,9 +194,13 @@ impl Drop for EPANET {
             }
         }
 
-        // Close and delete the EPANET project
+        // Close (if not already closed) and delete the EPANET project.
+        // EN_close frees network data; calling it twice causes a double-free.
+        // EN_deleteproject frees the project struct itself and is always safe.
         unsafe {
-            ffi::EN_close(self.ph);
+            if !self.closed.get() {
+                ffi::EN_close(self.ph);
+            }
             ffi::EN_deleteproject(self.ph);
         }
     }
@@ -200,3 +213,5 @@ mod bindings;
 pub mod epanet_error;
 mod error_messages;
 pub mod impls;
+
+pub use impls::project::{run_project, run_project_with_callback};

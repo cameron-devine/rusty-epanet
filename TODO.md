@@ -165,12 +165,12 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 
 ## Testing
 
-- [ ] Add tests for link operations (currently no link test module)
-- [ ] Add tests for pattern operations
-- [ ] Add tests for demand operations
-- [ ] Add tests for report operations
-- [ ] Add tests for project title and comment operations
-- [ ] Add integration test: build a network from scratch, solve, read results
+- [x] Add tests for link operations (currently no link test module)
+- [x] Add tests for pattern operations
+- [x] Add tests for demand operations
+- [x] Add tests for report operations
+- [x] Add tests for project title and comment operations
+- [x] Add integration test: build a network from scratch, solve, read results
 - [ ] Consider property-based testing with `proptest` for enum round-trips
 - [ ] Test thread safety claims (Send + Sync) - EPANET C library may not actually be thread-safe across projects
 
