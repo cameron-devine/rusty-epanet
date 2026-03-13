@@ -15,7 +15,7 @@ pub type Result<T> = std::result::Result<T, EPANETError>;
 /// * `_code` - The numeric error code returned by the EPANET library.
 /// * `_message` - A human-readable description of the error associated with the error code.
 /// * `_context` - Optional additional context about the error, such as the operation or parameters
-///                that caused it.
+///   that caused it.
 #[derive(Debug, Clone)]
 pub struct EPANETError {
     pub code: i32,
@@ -25,8 +25,8 @@ pub struct EPANETError {
 
 impl Display for EPANETError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.context.is_some() {
-            return write!(f, "{} - {:?}", self.message, self.context.as_ref().unwrap());
+        if let Some(ctx) = &self.context {
+            return write!(f, "{} - {:?}", self.message, ctx);
         }
         write!(f, "{}", self.message)
     }

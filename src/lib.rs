@@ -1,3 +1,8 @@
+// The `as i32` casts on bindgen constants are required for cross-platform
+// compatibility — some compilers emit u32, others i32.
+// The too_many_arguments functions mirror the C API signatures directly.
+#![allow(clippy::unnecessary_cast, clippy::too_many_arguments)]
+
 pub mod types;
 use bindings as ffi;
 use epanet_error::*;
@@ -72,7 +77,6 @@ impl EPANET {
     ///
     /// # Errors
     /// Return an `EPANETError` if the underlying C function fails.
-
     pub(crate) fn create_project_handle() -> Result<ffi::EN_Project> {
         let mut ph: ffi::EN_Project = std::ptr::null_mut();
         let result = unsafe { ffi::EN_createproject(&mut ph) };

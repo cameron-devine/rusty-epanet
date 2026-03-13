@@ -4,6 +4,7 @@ use crate::EPANET;
 use crate::types::ActionCodeType;
 use crate::epanet_error::*;
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum LinkProperty {
@@ -38,6 +39,7 @@ pub enum LinkProperty {
     LinkLeakage = EN_LinkProperty_EN_LINK_LEAKAGE as i32, // Current leakage rate (read only)
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum LinkType {
@@ -53,6 +55,7 @@ pub enum LinkType {
     Pcv = EN_LinkType_EN_PCV as i32, // Positional control valve
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum LinkStatusType {
@@ -60,6 +63,7 @@ pub enum LinkStatusType {
     Open = EN_LinkStatusType_EN_OPEN as i32, // Link is open
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum PumpType {
@@ -69,6 +73,7 @@ pub enum PumpType {
     NoCurve = EN_PumpType_EN_NOCURVE as i32, // No curve
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum PumpStateType {

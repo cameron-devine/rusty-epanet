@@ -94,6 +94,7 @@ use std::marker::PhantomData;
 /// Initialization options for hydraulic and quality analyses.
 ///
 /// Controls whether results are saved to a file and whether flows are re-initialized.
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum InitHydOption {
@@ -293,6 +294,7 @@ impl<'a> HydraulicSolver<'a, Running> {
     ///
     /// Returns [`StepResult::Continue`] with the current time and next step duration,
     /// or [`StepResult::Done`] with the final time when the simulation is complete.
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Result<StepResult> {
         let mut time_to_next: std::os::raw::c_long = 0;
         check_error(unsafe { ffi::EN_nextH(self.project.ph, &mut time_to_next) })?;
@@ -488,6 +490,7 @@ impl<'a> QualitySolver<'a, Running> {
     ///
     /// This method uses `EN_nextQ` which advances to the next time when
     /// results should be reported (typically at hydraulic time step intervals).
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Result<StepResult> {
         let mut time_step: std::os::raw::c_long = 0;
         check_error(unsafe { ffi::EN_nextQ(self.project.ph, &mut time_step) })?;

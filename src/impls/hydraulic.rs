@@ -6,7 +6,6 @@ use crate::bindings as ffi;
 use crate::epanet_error::*;
 use crate::EPANET;
 use crate::types::analysis::InitHydOption;
-use std::mem::MaybeUninit;
 use std::os::raw::c_long;
 
 /// ## Hydraulic Analysis APIs

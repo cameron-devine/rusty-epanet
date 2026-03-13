@@ -29,6 +29,7 @@ pub const MAX_MSG_SIZE: EN_SizeLimits = EN_SizeLimits_EN_MAXMSG;
 pub const MAX_TITLE_SIZE: EN_SizeLimits = 79;
 
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum ObjectType {
@@ -40,6 +41,7 @@ pub enum ObjectType {
     Rule = EN_ObjectType_EN_RULE as i32, // Control rules
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum CountType {
@@ -52,6 +54,7 @@ pub enum CountType {
     RuleCount = EN_CountType_EN_RULECOUNT as i32, // Number of rule-based controls
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum ActionCodeType {
