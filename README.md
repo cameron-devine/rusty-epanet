@@ -358,13 +358,31 @@ Live computed results (`pressure()`, `flow()`, `head_loss()`, etc.) always query
 
 ### Thread Safety
 
-`EPANET` implements `Send` and `Sync`, but the underlying C library may use global state in some configurations. External synchronization (e.g., a `Mutex`) is recommended for concurrent access to the same project.
+`EPANET` implements `Send` but **not** `Sync`. Each project handle can be moved to another thread, but it cannot be shared concurrently via `&EPANET` because the underlying C library uses internal mutable state (e.g., shared message buffers, `strtok()`) that is not safe for concurrent access.
+
+To share an `EPANET` instance across threads, wrap it in `Arc<Mutex<EPANET>>`:
+
+```rust
+use std::sync::{Arc, Mutex};
+
+let ph = EPANET::with_inp_file("net1.inp", "", "")?;
+let shared = Arc::new(Mutex::new(ph));
+
+let shared_clone = Arc::clone(&shared);
+std::thread::spawn(move || {
+    let ph = shared_clone.lock().unwrap();
+    let pressure = ph.get_node_value(1, NodeProperty::Pressure).unwrap();
+    println!("Pressure: {:.2}", pressure);
+});
+```
+
+Separate `EPANET` instances (different projects) can safely run on different threads without any synchronization.
 
 ## Architecture
 
 ```
 src/
-  lib.rs              # EPANET struct (owns EN_Project handle), Drop, Send+Sync, constructors
+  lib.rs              # EPANET struct (owns EN_Project handle), Drop, Send, constructors
   bindings.rs         # include!() of bindgen output
   epanet_error.rs     # EPANETError, Result<T>, check_error()
   error_messages.rs   # Generated: error code -> &'static str

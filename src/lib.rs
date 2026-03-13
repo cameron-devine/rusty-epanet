@@ -15,10 +15,12 @@ use types::report::ReportCallback;
 ///
 /// # Thread Safety
 ///
-/// `EPANET` implements `Send` and `Sync`, meaning it can be safely shared
-/// between threads. However, the underlying EPANET C library may not be
-/// thread-safe for concurrent operations on the same project, so external
-/// synchronization may be required for concurrent access.
+/// `EPANET` implements `Send` but **not** `Sync`. Each project handle can be
+/// moved to another thread, but it cannot be shared concurrently via `&EPANET`
+/// because the underlying C library uses internal mutable state (e.g., shared
+/// message buffers, `strtok()`) that is not safe for concurrent access.
+///
+/// To share an `EPANET` instance across threads, wrap it in `Arc<Mutex<EPANET>>`.
 ///
 /// # Report Callback
 ///
@@ -176,7 +178,6 @@ impl EPANET {
 }
 
 unsafe impl Send for EPANET {}
-unsafe impl Sync for EPANET {}
 
 impl Drop for EPANET {
     fn drop(&mut self) {
@@ -207,7 +208,82 @@ impl Drop for EPANET {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+    use crate::impls::test_utils::fixtures::temp_rpt_path;
+
+    #[test]
+    fn epanet_is_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<EPANET>();
+    }
+
+    /// Verify that EPANET does not implement Sync.
+    /// This is a documentation-level assertion — Rust stable doesn't support
+    /// negative trait bounds, so we rely on the absence of `unsafe impl Sync`
+    /// in lib.rs. If someone accidentally adds it, the strtok-based tests
+    /// in CI (with --test-threads=1 removed) would catch the race conditions.
+    #[test]
+    fn epanet_is_not_sync() {}
+
+    #[test]
+    fn move_to_thread() {
+        let rpt = temp_rpt_path();
+        let ph = EPANET::new(&rpt, "", FlowUnits::Cfs, HeadLossType::HazenWilliams)
+            .expect("Failed to create project");
+
+        let handle = std::thread::spawn(move || {
+            // Use the project on another thread
+            let count = ph.get_count(types::CountType::NodeCount).unwrap();
+            assert_eq!(count, 0);
+        });
+        handle.join().unwrap();
+    }
+
+    #[test]
+    fn sequential_cross_thread_transfer() {
+        let rpt = temp_rpt_path();
+        let ph = EPANET::new(&rpt, "", FlowUnits::Cfs, HeadLossType::HazenWilliams)
+            .expect("Failed to create project");
+
+        // Move to thread 1
+        let handle = std::thread::spawn(move || {
+            let _ = ph.get_count(types::CountType::NodeCount).unwrap();
+            ph // move back
+        });
+        let ph = handle.join().unwrap();
+
+        // Move to thread 2
+        let handle = std::thread::spawn(move || {
+            let _ = ph.get_count(types::CountType::NodeCount).unwrap();
+            ph
+        });
+        let _ph = handle.join().unwrap();
+    }
+
+    #[test]
+    fn arc_mutex_shared_access() {
+        use std::sync::{Arc, Mutex};
+
+        let rpt = temp_rpt_path();
+        let ph = EPANET::new(&rpt, "", FlowUnits::Cfs, HeadLossType::HazenWilliams)
+            .expect("Failed to create project");
+        let shared = Arc::new(Mutex::new(ph));
+
+        let mut handles = vec![];
+        for _ in 0..4 {
+            let shared = Arc::clone(&shared);
+            handles.push(std::thread::spawn(move || {
+                let ph = shared.lock().unwrap();
+                let count = ph.get_count(types::CountType::NodeCount).unwrap();
+                assert_eq!(count, 0);
+            }));
+        }
+        for h in handles {
+            h.join().unwrap();
+        }
+    }
+}
 
 mod bindings;
 pub mod epanet_error;

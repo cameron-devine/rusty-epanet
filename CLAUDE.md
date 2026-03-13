@@ -26,7 +26,7 @@ Links dynamically against `epanet2`.
 
 ```
 src/
-  lib.rs              # EPANET struct (owns EN_Project handle), Drop, Send+Sync, constructors
+  lib.rs              # EPANET struct (owns EN_Project handle), Drop, Send, constructors
   bindings.rs         # include!() of bindgen output (aliased as `ffi` throughout)
   epanet_error.rs     # EPANETError, Result<T>, check_error(), check_error_with_context()
   error_messages.rs   # Generated: get_error_message(code) -> &'static str
@@ -60,7 +60,7 @@ src/
 ## Core Design Patterns
 
 ### EPANET Struct
-Single entry point. Owns the opaque `EN_Project` C handle. `Drop` calls `EN_close()` + `EN_deleteproject()`. Manually implements `Send + Sync`. All API methods are `impl EPANET` blocks in `impls/`.
+Single entry point. Owns the opaque `EN_Project` C handle. `Drop` calls `EN_close()` + `EN_deleteproject()`. Manually implements `Send` (but not `Sync` — the C library uses internal mutable state). All API methods are `impl EPANET` blocks in `impls/`.
 
 ### Error Handling
 All C API calls return `i32` (0 = success). Two helpers convert these:
