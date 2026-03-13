@@ -31,6 +31,27 @@ cargo build    # compiles EPANET C lib via cmake, generates FFI bindings via bin
 cargo test     # runs ~120 tests across unit, integration, and doc tests
 ```
 
+By default, the EPANET C library is **statically linked** into your binary — no DLL/SO distribution needed.
+
+## Linking
+
+The crate defaults to **static linking** (`static-link` feature), which embeds the EPANET C library directly into your binary. This is the recommended approach — no shared libraries to distribute or locate at runtime.
+
+To use **dynamic linking** instead (e.g., to swap EPANET versions without recompiling):
+
+```bash
+cargo build --features dynamic-link --no-default-features
+```
+
+Or in your `Cargo.toml`:
+
+```toml
+[dependencies]
+epanet = { version = "0.1", default-features = false, features = ["dynamic-link"] }
+```
+
+With dynamic linking, you must ensure `epanet2.dll` (Windows), `libepanet2.so` (Linux), or `libepanet2.dylib` (macOS) is on the library search path at runtime.
+
 ## Quick Start
 
 ### Open an Existing Network
@@ -385,6 +406,13 @@ tests/
 | `strum` / `strum_macros` (dev) | Enum iteration in tests |
 | `bindgen` (build) | C header -> Rust FFI bindings |
 | `cmake` (build) | Build EPANET C library |
+
+### Feature Flags
+
+| Feature | Default | Description |
+|---------|---------|-------------|
+| `static-link` | Yes | Statically link EPANET (self-contained binary) |
+| `dynamic-link` | No | Dynamically link EPANET (requires shared library at runtime) |
 
 ## Additional Resources
 

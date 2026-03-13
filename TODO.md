@@ -193,7 +193,7 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 
 ## Build / CI
 
-- [ ] Add CI workflow (GitHub Actions) for build + test on Linux/Windows/macOS
-- [ ] Consider static linking option (`cargo:rustc-link-lib=static=epanet2`) to avoid DLL distribution
-- [ ] Add cargo features for optional static vs dynamic linking
+- [x] Add CI workflow (GitHub Actions) for build + test on Linux/Windows/macOS
+- [x] Consider static linking option (`cargo:rustc-link-lib=static=epanet2`) to avoid DLL distribution
+- [x] Add cargo features for optional static vs dynamic linking
 - [x] Investigate why `EN_gettag`/`EN_settag` are missing from bindgen output (may need wrapper.h update)
