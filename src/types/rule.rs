@@ -5,50 +5,50 @@ use num_derive::FromPrimitive;
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum RuleObject {
-    Node = EN_RuleObject_EN_R_NODE, // Clause refers to a node
-    Link = EN_RuleObject_EN_R_LINK, // Clause refers to a link
-    System = EN_RuleObject_EN_R_SYSTEM, // Clause refers to a system parameter (e.g., time)
+    Node = EN_RuleObject_EN_R_NODE as i32, // Clause refers to a node
+    Link = EN_RuleObject_EN_R_LINK as i32, // Clause refers to a link
+    System = EN_RuleObject_EN_R_SYSTEM as i32, // Clause refers to a system parameter (e.g., time)
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum RuleVariable {
-    Demand = EN_RuleVariable_EN_R_DEMAND, // Nodal demand
-    Head = EN_RuleVariable_EN_R_HEAD, // Nodal hydraulic head
-    Grade = EN_RuleVariable_EN_R_GRADE, // Nodal hydraulic grade
-    Level = EN_RuleVariable_EN_R_LEVEL, // Tank water level
-    Pressure = EN_RuleVariable_EN_R_PRESSURE, // Nodal pressure
-    Flow = EN_RuleVariable_EN_R_FLOW, // Link flow rate
-    Status = EN_RuleVariable_EN_R_STATUS, // Link status
-    Setting = EN_RuleVariable_EN_R_SETTING, // Link setting
-    Power = EN_RuleVariable_EN_R_POWER, // Pump power output
-    Time = EN_RuleVariable_EN_R_TIME, // Elapsed simulation time
-    ClockTime = EN_RuleVariable_EN_R_CLOCKTIME, // Time of day
-    FillTime = EN_RuleVariable_EN_R_FILLTIME, // Time to fill a tank
-    DrainTime = EN_RuleVariable_EN_R_DRAINTIME, // Time to drain a tank
+    Demand = EN_RuleVariable_EN_R_DEMAND as i32, // Nodal demand
+    Head = EN_RuleVariable_EN_R_HEAD as i32, // Nodal hydraulic head
+    Grade = EN_RuleVariable_EN_R_GRADE as i32, // Nodal hydraulic grade
+    Level = EN_RuleVariable_EN_R_LEVEL as i32, // Tank water level
+    Pressure = EN_RuleVariable_EN_R_PRESSURE as i32, // Nodal pressure
+    Flow = EN_RuleVariable_EN_R_FLOW as i32, // Link flow rate
+    Status = EN_RuleVariable_EN_R_STATUS as i32, // Link status
+    Setting = EN_RuleVariable_EN_R_SETTING as i32, // Link setting
+    Power = EN_RuleVariable_EN_R_POWER as i32, // Pump power output
+    Time = EN_RuleVariable_EN_R_TIME as i32, // Elapsed simulation time
+    ClockTime = EN_RuleVariable_EN_R_CLOCKTIME as i32, // Time of day
+    FillTime = EN_RuleVariable_EN_R_FILLTIME as i32, // Time to fill a tank
+    DrainTime = EN_RuleVariable_EN_R_DRAINTIME as i32, // Time to drain a tank
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum RuleOperator {
-    Eq = EN_RuleOperator_EN_R_EQ, // Equal to
-    Ne = EN_RuleOperator_EN_R_NE, // Not equal
-    Le = EN_RuleOperator_EN_R_LE, // Less than or equal to
-    Ge = EN_RuleOperator_EN_R_GE, // Greater than or equal to
-    Lt = EN_RuleOperator_EN_R_LT, // Less than
-    Gt = EN_RuleOperator_EN_R_GT, // Greater than
-    Is = EN_RuleOperator_EN_R_IS, // Is equal to
-    Not = EN_RuleOperator_EN_R_NOT, // Is not equal to
-    Below = EN_RuleOperator_EN_R_BELOW, // Is below
-    Above = EN_RuleOperator_EN_R_ABOVE, // Is above
+    Eq = EN_RuleOperator_EN_R_EQ as i32, // Equal to
+    Ne = EN_RuleOperator_EN_R_NE as i32, // Not equal
+    Le = EN_RuleOperator_EN_R_LE as i32, // Less than or equal to
+    Ge = EN_RuleOperator_EN_R_GE as i32, // Greater than or equal to
+    Lt = EN_RuleOperator_EN_R_LT as i32, // Less than
+    Gt = EN_RuleOperator_EN_R_GT as i32, // Greater than
+    Is = EN_RuleOperator_EN_R_IS as i32, // Is equal to
+    Not = EN_RuleOperator_EN_R_NOT as i32, // Is not equal to
+    Below = EN_RuleOperator_EN_R_BELOW as i32, // Is below
+    Above = EN_RuleOperator_EN_R_ABOVE as i32, // Is above
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum RuleStatus {
-    IsOpen = EN_RuleStatus_EN_R_IS_OPEN, // Link is open
-    IsClosed = EN_RuleStatus_EN_R_IS_CLOSED, // Link is closed
-    IsActive = EN_RuleStatus_EN_R_IS_ACTIVE, // Control valve is active
+    IsOpen = EN_RuleStatus_EN_R_IS_OPEN as i32, // Link is open
+    IsClosed = EN_RuleStatus_EN_R_IS_CLOSED as i32, // Link is closed
+    IsActive = EN_RuleStatus_EN_R_IS_ACTIVE as i32, // Control valve is active
 }
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]

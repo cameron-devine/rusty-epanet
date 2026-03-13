@@ -126,11 +126,11 @@ impl<'a> Control<'a> {
 #[repr(i32)]
 pub enum ControlType {
     /// Act when pressure or tank level drops below a setpoint
-    LowLevel = EN_ControlType_EN_LOWLEVEL,
+    LowLevel = EN_ControlType_EN_LOWLEVEL as i32,
     /// Act when pressure or tank level rises above a setpoint
-    HiLevel = EN_ControlType_EN_HILEVEL,
+    HiLevel = EN_ControlType_EN_HILEVEL as i32,
     /// Act at a prescribed elapsed amount of time
-    Timer = EN_ControlType_EN_TIMER,
+    Timer = EN_ControlType_EN_TIMER as i32,
     /// Act at a particular time of day
-    TimeOfDay = EN_ControlType_EN_TIMEOFDAY,
+    TimeOfDay = EN_ControlType_EN_TIMEOFDAY as i32,
 }

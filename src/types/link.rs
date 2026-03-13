@@ -7,75 +7,75 @@ use crate::epanet_error::*;
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum LinkProperty {
-    Diameter = EN_LinkProperty_EN_DIAMETER, // Pipe/valve diameter
-    Length = EN_LinkProperty_EN_LENGTH, // Pipe length
-    Roughness = EN_LinkProperty_EN_ROUGHNESS, // Pipe roughness coefficient
-    MinorLoss = EN_LinkProperty_EN_MINORLOSS, // Pipe/valve minor loss coefficient
-    InitStatus = EN_LinkProperty_EN_INITSTATUS, // Initial status
-    InitSetting = EN_LinkProperty_EN_INITSETTING, // Initial pump speed or valve setting
-    KBulk = EN_LinkProperty_EN_KBULK, // Bulk chemical reaction coefficient
-    KWall = EN_LinkProperty_EN_KWALL, // Pipe wall chemical reaction coefficient
-    Flow = EN_LinkProperty_EN_FLOW, // Current computed flow rate (read only)
-    Velocity = EN_LinkProperty_EN_VELOCITY, // Current computed flow velocity (read only)
-    HeadLoss = EN_LinkProperty_EN_HEADLOSS, // Current computed head loss (read only)
-    Status = EN_LinkProperty_EN_STATUS, // Current link status
-    Setting = EN_LinkProperty_EN_SETTING, // Current link setting
-    Energy = EN_LinkProperty_EN_ENERGY, // Current computed pump energy usage (read only)
-    LinkQual = EN_LinkProperty_EN_LINKQUAL, // Current computed link quality (read only)
-    LinkPattern = EN_LinkProperty_EN_LINKPATTERN, // Pump speed time pattern index
-    PumpState = EN_LinkProperty_EN_PUMP_STATE, // Current computed pump state (read only)
-    PumpEffic = EN_LinkProperty_EN_PUMP_EFFIC, // Current computed pump efficiency (read only)
-    PumpPower = EN_LinkProperty_EN_PUMP_POWER, // Pump constant power rating
-    PumpHCurve = EN_LinkProperty_EN_PUMP_HCURVE, // Pump head v. flow curve index
-    PumpECurve = EN_LinkProperty_EN_PUMP_ECURVE, // Pump efficiency v. flow curve index
-    PumpECost = EN_LinkProperty_EN_PUMP_ECOST, // Pump average energy price
-    PumpEPat = EN_LinkProperty_EN_PUMP_EPAT, // Pump energy price time pattern index
-    LinkInControl = EN_LinkProperty_EN_LINK_INCONTROL, // Is present in any simple or rule-based control (= 1) or not (= 0)
-    GPVCurve = EN_LinkProperty_EN_GPV_CURVE, // GPV head loss v. flow curve index
-    PCVCurve = EN_LinkProperty_EN_PCV_CURVE, // PCV loss coeff. curve index
-    LeakArea = EN_LinkProperty_EN_LEAK_AREA, // Pipe leak area (sq mm per 100 length units)
-    LeakExpan = EN_LinkProperty_EN_LEAK_EXPAN, // Leak expansion rate (sq mm per unit of pressure head)
-    LinkLeakage = EN_LinkProperty_EN_LINK_LEAKAGE, // Current leakage rate (read only)
+    Diameter = EN_LinkProperty_EN_DIAMETER as i32, // Pipe/valve diameter
+    Length = EN_LinkProperty_EN_LENGTH as i32, // Pipe length
+    Roughness = EN_LinkProperty_EN_ROUGHNESS as i32, // Pipe roughness coefficient
+    MinorLoss = EN_LinkProperty_EN_MINORLOSS as i32, // Pipe/valve minor loss coefficient
+    InitStatus = EN_LinkProperty_EN_INITSTATUS as i32, // Initial status
+    InitSetting = EN_LinkProperty_EN_INITSETTING as i32, // Initial pump speed or valve setting
+    KBulk = EN_LinkProperty_EN_KBULK as i32, // Bulk chemical reaction coefficient
+    KWall = EN_LinkProperty_EN_KWALL as i32, // Pipe wall chemical reaction coefficient
+    Flow = EN_LinkProperty_EN_FLOW as i32, // Current computed flow rate (read only)
+    Velocity = EN_LinkProperty_EN_VELOCITY as i32, // Current computed flow velocity (read only)
+    HeadLoss = EN_LinkProperty_EN_HEADLOSS as i32, // Current computed head loss (read only)
+    Status = EN_LinkProperty_EN_STATUS as i32, // Current link status
+    Setting = EN_LinkProperty_EN_SETTING as i32, // Current link setting
+    Energy = EN_LinkProperty_EN_ENERGY as i32, // Current computed pump energy usage (read only)
+    LinkQual = EN_LinkProperty_EN_LINKQUAL as i32, // Current computed link quality (read only)
+    LinkPattern = EN_LinkProperty_EN_LINKPATTERN as i32, // Pump speed time pattern index
+    PumpState = EN_LinkProperty_EN_PUMP_STATE as i32, // Current computed pump state (read only)
+    PumpEffic = EN_LinkProperty_EN_PUMP_EFFIC as i32, // Current computed pump efficiency (read only)
+    PumpPower = EN_LinkProperty_EN_PUMP_POWER as i32, // Pump constant power rating
+    PumpHCurve = EN_LinkProperty_EN_PUMP_HCURVE as i32, // Pump head v. flow curve index
+    PumpECurve = EN_LinkProperty_EN_PUMP_ECURVE as i32, // Pump efficiency v. flow curve index
+    PumpECost = EN_LinkProperty_EN_PUMP_ECOST as i32, // Pump average energy price
+    PumpEPat = EN_LinkProperty_EN_PUMP_EPAT as i32, // Pump energy price time pattern index
+    LinkInControl = EN_LinkProperty_EN_LINK_INCONTROL as i32, // Is present in any simple or rule-based control (= 1) or not (= 0)
+    GPVCurve = EN_LinkProperty_EN_GPV_CURVE as i32, // GPV head loss v. flow curve index
+    PCVCurve = EN_LinkProperty_EN_PCV_CURVE as i32, // PCV loss coeff. curve index
+    LeakArea = EN_LinkProperty_EN_LEAK_AREA as i32, // Pipe leak area (sq mm per 100 length units)
+    LeakExpan = EN_LinkProperty_EN_LEAK_EXPAN as i32, // Leak expansion rate (sq mm per unit of pressure head)
+    LinkLeakage = EN_LinkProperty_EN_LINK_LEAKAGE as i32, // Current leakage rate (read only)
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum LinkType {
-    CvPipe = EN_LinkType_EN_CVPIPE, // Pipe with check valve
-    Pipe = EN_LinkType_EN_PIPE, // Pipe
-    Pump = EN_LinkType_EN_PUMP, // Pump
-    Prv = EN_LinkType_EN_PRV, // Pressure reducing valve
-    Psv = EN_LinkType_EN_PSV, // Pressure sustaining valve
-    Pbv = EN_LinkType_EN_PBV, // Pressure breaker valve
-    Fcv = EN_LinkType_EN_FCV, // Flow control valve
-    Tcv = EN_LinkType_EN_TCV, // Throttle control valve
-    Gpv = EN_LinkType_EN_GPV, // General purpose valve
-    Pcv = EN_LinkType_EN_PCV, // Positional control valve
+    CvPipe = EN_LinkType_EN_CVPIPE as i32, // Pipe with check valve
+    Pipe = EN_LinkType_EN_PIPE as i32, // Pipe
+    Pump = EN_LinkType_EN_PUMP as i32, // Pump
+    Prv = EN_LinkType_EN_PRV as i32, // Pressure reducing valve
+    Psv = EN_LinkType_EN_PSV as i32, // Pressure sustaining valve
+    Pbv = EN_LinkType_EN_PBV as i32, // Pressure breaker valve
+    Fcv = EN_LinkType_EN_FCV as i32, // Flow control valve
+    Tcv = EN_LinkType_EN_TCV as i32, // Throttle control valve
+    Gpv = EN_LinkType_EN_GPV as i32, // General purpose valve
+    Pcv = EN_LinkType_EN_PCV as i32, // Positional control valve
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum LinkStatusType {
-    Closed = EN_LinkStatusType_EN_CLOSED, // Link is closed
-    Open = EN_LinkStatusType_EN_OPEN, // Link is open
+    Closed = EN_LinkStatusType_EN_CLOSED as i32, // Link is closed
+    Open = EN_LinkStatusType_EN_OPEN as i32, // Link is open
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum PumpType {
-    ConstHp = EN_PumpType_EN_CONST_HP, // Constant horsepower
-    PowerFunc = EN_PumpType_EN_POWER_FUNC, // Power function
-    Custom = EN_PumpType_EN_CUSTOM, // User-defined custom curve
-    NoCurve = EN_PumpType_EN_NOCURVE, // No curve
+    ConstHp = EN_PumpType_EN_CONST_HP as i32, // Constant horsepower
+    PowerFunc = EN_PumpType_EN_POWER_FUNC as i32, // Power function
+    Custom = EN_PumpType_EN_CUSTOM as i32, // User-defined custom curve
+    NoCurve = EN_PumpType_EN_NOCURVE as i32, // No curve
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum PumpStateType {
-    PumpXHead = EN_PumpStateType_EN_PUMP_XHEAD, // Pump closed - cannot supply head
-    PumpClosed = EN_PumpStateType_EN_PUMP_CLOSED, // Pump closed
-    PumpOpen = EN_PumpStateType_EN_PUMP_OPEN, // Pump open
-    PumpXFlow = EN_PumpStateType_EN_PUMP_XFLOW, // Pump open - cannot supply flow
+    PumpXHead = EN_PumpStateType_EN_PUMP_XHEAD as i32, // Pump closed - cannot supply head
+    PumpClosed = EN_PumpStateType_EN_PUMP_CLOSED as i32, // Pump closed
+    PumpOpen = EN_PumpStateType_EN_PUMP_OPEN as i32, // Pump open
+    PumpXFlow = EN_PumpStateType_EN_PUMP_XFLOW as i32, // Pump open - cannot supply flow
 }
 
 /// A link in the EPANET network model.

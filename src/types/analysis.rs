@@ -98,13 +98,13 @@ use std::marker::PhantomData;
 #[repr(i32)]
 pub enum InitHydOption {
     /// Don't save hydraulics; don't re-initialize flows
-    NoSave = EN_InitHydOption_EN_NOSAVE,
+    NoSave = EN_InitHydOption_EN_NOSAVE as i32,
     /// Save hydraulics to file, don't re-initialize flows
-    Save = EN_InitHydOption_EN_SAVE,
+    Save = EN_InitHydOption_EN_SAVE as i32,
     /// Don't save hydraulics; re-initialize flows
-    InitFlow = EN_InitHydOption_EN_INITFLOW,
+    InitFlow = EN_InitHydOption_EN_INITFLOW as i32,
     /// Save hydraulics; re-initialize flows
-    SaveAndInit = EN_InitHydOption_EN_SAVE_AND_INIT,
+    SaveAndInit = EN_InitHydOption_EN_SAVE_AND_INIT as i32,
 }
 
 // =============================================================================

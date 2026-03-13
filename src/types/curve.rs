@@ -100,15 +100,15 @@ impl<'a> Curve<'a> {
 #[repr(i32)]
 pub enum CurveType {
     /// Tank volume vs. depth curve
-    VolumeCurve = EN_CurveType_EN_VOLUME_CURVE,
+    VolumeCurve = EN_CurveType_EN_VOLUME_CURVE as i32,
     /// Pump head vs. flow curve
-    PumpCurve = EN_CurveType_EN_PUMP_CURVE,
+    PumpCurve = EN_CurveType_EN_PUMP_CURVE as i32,
     /// Pump efficiency vs. flow curve
-    EfficCurve = EN_CurveType_EN_EFFIC_CURVE,
+    EfficCurve = EN_CurveType_EN_EFFIC_CURVE as i32,
     /// Valve head loss vs. flow curve
-    HLossCurve = EN_CurveType_EN_HLOSS_CURVE,
+    HLossCurve = EN_CurveType_EN_HLOSS_CURVE as i32,
     /// Generic curve
-    GenericCurve = EN_CurveType_EN_GENERIC_CURVE,
+    GenericCurve = EN_CurveType_EN_GENERIC_CURVE as i32,
     /// Valve loss coefficient vs. fraction open
-    ValveCurve = EN_CurveType_EN_VALVE_CURVE,
+    ValveCurve = EN_CurveType_EN_VALVE_CURVE as i32,
 }

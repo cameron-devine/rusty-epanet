@@ -122,9 +122,9 @@ impl<'a> Demand<'a> {
 #[repr(i32)]
 pub enum DemandModel {
     /// Demand driven analysis
-    Dda = EN_DemandModel_EN_DDA,
+    Dda = EN_DemandModel_EN_DDA as i32,
     /// Pressure driven analysis
-    Pda = EN_DemandModel_EN_PDA,
+    Pda = EN_DemandModel_EN_PDA as i32,
 }
 
 pub struct DemandModelInfo {
