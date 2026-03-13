@@ -425,9 +425,9 @@ impl EPANET {
     /// # See Also
     /// - EN_timetonextevent (EPANET C API)
     pub fn time_to_next_event(&self) -> Result<Event> {
-        let mut event_type = 0;
-        let mut duration = 0;
-        let mut element_index = 0;
+        let mut event_type: i32 = 0;
+        let mut duration: std::os::raw::c_long = 0;
+        let mut element_index: i32 = 0;
         check_error(unsafe {
             ffi::EN_timetonextevent(self.ph, &mut event_type, &mut duration, &mut element_index)
         })?;

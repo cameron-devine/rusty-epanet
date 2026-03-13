@@ -7,6 +7,7 @@ use crate::epanet_error::*;
 use crate::EPANET;
 use crate::types::analysis::InitHydOption;
 use std::mem::MaybeUninit;
+use std::os::raw::c_long;
 
 /// ## Hydraulic Analysis APIs
 impl EPANET {
@@ -169,10 +170,10 @@ impl EPANET {
     /// # See Also
     /// - EN_runH (EPANET C API)
     pub fn run_h(&self) -> Result<u64> {
-        let mut out_current_time = MaybeUninit::uninit();
+        let mut out_current_time: c_long = 0;
         unsafe {
-            match ffi::EN_runH(self.ph, out_current_time.as_mut_ptr()) {
-                0 => Ok(out_current_time.assume_init() as u64),
+            match ffi::EN_runH(self.ph, &mut out_current_time) {
+                0 => Ok(out_current_time as u64),
                 x => Err(EPANETError::from(x)),
             }
         }
@@ -201,10 +202,10 @@ impl EPANET {
     /// # See Also
     /// - EN_nextH (EPANET C API)
     pub fn next_h(&self) -> Result<u64> {
-        let mut out_next_time = MaybeUninit::uninit();
+        let mut out_next_time: c_long = 0;
         unsafe {
-            match ffi::EN_nextH(self.ph, out_next_time.as_mut_ptr()) {
-                0 => Ok(out_next_time.assume_init() as u64),
+            match ffi::EN_nextH(self.ph, &mut out_next_time) {
+                0 => Ok(out_next_time as u64),
                 x => Err(EPANETError::from(x)),
             }
         }

@@ -9,6 +9,7 @@ use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
 use num_traits::FromPrimitive;
 use std::ffi::{c_char, CString};
+use std::os::raw::c_long;
 
 /// ## Analysis Options APIs
 impl EPANET {
@@ -33,13 +34,13 @@ impl EPANET {
     }
 
     pub fn get_time_parameter(&self, parameter: TimeParameter) -> Result<i32> {
-        let mut value: i32 = 0;
+        let mut value: c_long = 0;
         check_error(unsafe { ffi::EN_gettimeparam(self.ph, parameter as i32, &mut value) })?;
-        Ok(value)
+        Ok(value as i32)
     }
 
     pub fn set_time_parameter(&self, parameter: TimeParameter, value: i32) -> Result<()> {
-        check_error(unsafe { ffi::EN_settimeparam(self.ph, parameter as i32, value) })
+        check_error(unsafe { ffi::EN_settimeparam(self.ph, parameter as i32, value as c_long) })
     }
 
     pub fn get_quality_info(&self) -> Result<QualityAnalysisInfo> {

@@ -278,7 +278,7 @@ impl<'a> HydraulicSolver<'a, Initialized> {
         let project = self.project;
         std::mem::forget(self);
 
-        let mut current_time: i32 = 0;
+        let mut current_time: std::os::raw::c_long = 0;
         check_error(unsafe { ffi::EN_runH(project.ph, &mut current_time) })?;
         Ok(HydraulicSolver {
             project,
@@ -294,7 +294,7 @@ impl<'a> HydraulicSolver<'a, Running> {
     /// Returns [`StepResult::Continue`] with the current time and next step duration,
     /// or [`StepResult::Done`] with the final time when the simulation is complete.
     pub fn next(&mut self) -> Result<StepResult> {
-        let mut time_to_next: i32 = 0;
+        let mut time_to_next: std::os::raw::c_long = 0;
         check_error(unsafe { ffi::EN_nextH(self.project.ph, &mut time_to_next) })?;
 
         if time_to_next == 0 {
@@ -302,7 +302,7 @@ impl<'a> HydraulicSolver<'a, Running> {
                 current_time: self.current_time,
             })
         } else {
-            let mut current_time: i32 = 0;
+            let mut current_time: std::os::raw::c_long = 0;
             check_error(unsafe { ffi::EN_runH(self.project.ph, &mut current_time) })?;
             self.current_time = current_time as i64;
             Ok(StepResult::Continue {

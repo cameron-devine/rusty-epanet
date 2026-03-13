@@ -6,7 +6,7 @@ use crate::epanet_error::*;
 use crate::ffi;
 use crate::types::analysis::InitHydOption;
 use crate::EPANET;
-use std::mem::MaybeUninit;
+use std::os::raw::c_long;
 
 /// ## Water Quality Analysis APIs
 impl EPANET {
@@ -86,9 +86,9 @@ impl EPANET {
     /// # See Also
     /// - EN_nextQ (EPANET C API)
     pub fn next_q(&self) -> Result<u64> {
-        let mut out_t_step = MaybeUninit::uninit();
-        check_error(unsafe { ffi::EN_nextQ(self.ph, out_t_step.as_mut_ptr()) })?;
-        Ok(unsafe { out_t_step.assume_init() as u64 })
+        let mut out_t_step: c_long = 0;
+        check_error(unsafe { ffi::EN_nextQ(self.ph, &mut out_t_step) })?;
+        Ok(out_t_step as u64)
     }
 
     /// Opens the quality simulation.
@@ -138,9 +138,9 @@ impl EPANET {
     /// # See Also
     /// - EN_runQ (EPANET C API)
     pub fn run_q(&self) -> Result<u64> {
-        let mut out_current_time = MaybeUninit::uninit();
-        check_error(unsafe { ffi::EN_runQ(self.ph, out_current_time.as_mut_ptr()) })?;
-        Ok(unsafe { out_current_time.assume_init() as u64 })
+        let mut out_current_time: c_long = 0;
+        check_error(unsafe { ffi::EN_runQ(self.ph, &mut out_current_time) })?;
+        Ok(out_current_time as u64)
     }
 
     /// Solves the entire quality simulation.
@@ -190,9 +190,9 @@ impl EPANET {
     /// # See Also
     /// - EN_stepQ (EPANET C API)
     pub fn step_q(&self) -> Result<u64> {
-        let mut out_time_left = MaybeUninit::uninit();
-        check_error(unsafe { ffi::EN_stepQ(self.ph, out_time_left.as_mut_ptr()) })?;
-        Ok(unsafe { out_time_left.assume_init() as u64 })
+        let mut out_time_left: c_long = 0;
+        check_error(unsafe { ffi::EN_stepQ(self.ph, &mut out_time_left) })?;
+        Ok(out_time_left as u64)
     }
 }
 
