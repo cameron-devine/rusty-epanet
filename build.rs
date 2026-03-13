@@ -24,6 +24,13 @@ fn main() {
         }
     }
 
+    // EPANET C code uses math functions (pow, sqrt, etc.) from libm.
+    // On Unix, the shared library needs libm linked in so the dynamic linker
+    // can resolve these symbols at runtime.
+    if cfg!(target_family = "unix") && dynamic_link {
+        cmake_cfg.define("CMAKE_C_STANDARD_LIBRARIES", "-lm");
+    }
+
     let dst = cmake_cfg.build();
 
     println!("cargo:rustc-link-search=native={}/lib", dst.display());

@@ -257,7 +257,8 @@ mod tests {
         let tmp_path = "test_save_output.inp";
         ph.save_inp_file(tmp_path).unwrap();
 
-        let ph2 = EPANET::with_inp_file(tmp_path, "", "").unwrap();
+        let rpt = temp_rpt_path();
+        let ph2 = EPANET::with_inp_file(tmp_path, &rpt, "").unwrap();
         assert_eq!(
             ph2.get_count(CountType::NodeCount).unwrap(),
             ph.get_count(CountType::NodeCount).unwrap()

@@ -4,11 +4,23 @@ use epanet::types::link::LinkProperty;
 use epanet::types::options::{FlowUnits, HeadLossType, TimeParameter};
 use epanet::types::CountType;
 use epanet::EPANET;
+use std::sync::atomic::{AtomicU32, Ordering};
+
+static TEST_COUNTER: AtomicU32 = AtomicU32::new(0);
+
+fn temp_rpt_path() -> String {
+    let id = TEST_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let dir = std::env::temp_dir();
+    dir.join(format!("epanet_integration_{id}.rpt"))
+        .to_string_lossy()
+        .into_owned()
+}
 
 #[test]
 fn test_build_solve_read_results() {
     // 1. Create empty project
-    let ph = EPANET::new("", "", FlowUnits::Gpm, HeadLossType::HazenWilliams)
+    let rpt = temp_rpt_path();
+    let ph = EPANET::new(&rpt, "", FlowUnits::Gpm, HeadLossType::HazenWilliams)
         .expect("Failed to create project");
 
     // 2. Add nodes
@@ -43,7 +55,8 @@ fn test_build_solve_read_results() {
     // 8. Save and re-open
     let tmp_path = "integration_test.inp";
     ph.save_inp_file(tmp_path).unwrap();
-    let ph2 = EPANET::with_inp_file(tmp_path, "", "").unwrap();
+    let rpt2 = temp_rpt_path();
+    let ph2 = EPANET::with_inp_file(tmp_path, &rpt2, "").unwrap();
     assert_eq!(ph2.get_count(CountType::NodeCount).unwrap(), 3);
 
     // 9. Clean up

@@ -9,13 +9,23 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 mod tests {
     use super::*;
     use std::ffi::c_char;
+    use std::sync::atomic::{AtomicU32, Ordering};
     use std::{
         ffi::{CStr, CString},
         i32,
     };
 
+    static BINDINGS_TEST_COUNTER: AtomicU32 = AtomicU32::new(0);
+
+    fn temp_rpt_path() -> String {
+        let id = BINDINGS_TEST_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let dir = std::env::temp_dir();
+        dir.join(format!("epanet_bindings_{id}.rpt"))
+            .to_string_lossy()
+            .into_owned()
+    }
+
     static DATA_PATH_NET1: &str = "./EPANET/example-networks/Net1.inp";
-    static DATA_PATH_RPT: &str = "";
     static DATA_PATH_OUT: &str = "";
 
     #[test]
@@ -43,8 +53,9 @@ mod tests {
             let error = EN_createproject(&mut ph);
             assert_eq!(error, 0);
 
+            let rpt = temp_rpt_path();
             let netPtr = CString::new(DATA_PATH_NET1).unwrap();
-            let pathPtr = CString::new(DATA_PATH_RPT).unwrap();
+            let pathPtr = CString::new(rpt).unwrap();
             let outPtr = CString::new(DATA_PATH_OUT).unwrap();
             let error = EN_open(ph, netPtr.as_ptr(), pathPtr.as_ptr(), outPtr.as_ptr());
             assert_eq!(error, 0);

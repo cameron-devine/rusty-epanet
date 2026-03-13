@@ -992,8 +992,9 @@ mod tests {
         let lines = Arc::new(Mutex::new(Vec::new()));
 
         {
+            let rpt = temp_rpt_path();
             let mut ph =
-                EPANET::with_inp_file("src/impls/test_utils/net1.inp", "", "").unwrap();
+                EPANET::with_inp_file("src/impls/test_utils/net1.inp", &rpt, "").unwrap();
             let lines_clone = Arc::clone(&lines);
 
             ph.set_report_callback(Some(Box::new(move |line: &str| {
