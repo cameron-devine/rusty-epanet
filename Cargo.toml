@@ -2,8 +2,12 @@
 name = "epanet"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Safe Rust bindings to the EPANET 2.2 water distribution network simulator"
+license = "MIT"
+repository = "https://github.com/cameron-devine/rusty-epanet"
+readme = "README.md"
+keywords = ["epanet", "water", "hydraulics", "simulation", "water-distribution"]
+categories = ["science", "api-bindings"]
 
 [features]
 default = ["static-link"]
