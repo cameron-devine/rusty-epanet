@@ -3,6 +3,19 @@ use crate::types::node::NodeType::Junction;
 use crate::types::options::{FlowUnits, HeadLossType};
 use crate::EPANET;
 use rstest::fixture;
+use std::sync::atomic::{AtomicU32, Ordering};
+
+static TEST_COUNTER: AtomicU32 = AtomicU32::new(0);
+
+/// Returns a unique temp file path for test report output.
+/// This avoids EPANET writing its banner/report to stdout.
+pub fn temp_rpt_path() -> String {
+    let id = TEST_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let dir = std::env::temp_dir();
+    dir.join(format!("epanet_test_{id}.rpt"))
+        .to_string_lossy()
+        .into_owned()
+}
 
 pub fn approx_eq(a: f64, b: f64, tol: f64) -> bool {
     (a - b).abs() <= tol
@@ -10,12 +23,14 @@ pub fn approx_eq(a: f64, b: f64, tol: f64) -> bool {
 
 #[fixture]
 pub fn ph() -> EPANET {
-    EPANET::with_inp_file("src/impls/test_utils/net1.inp", "", "").expect("ERROR OPENING PROJECT")
+    let rpt = temp_rpt_path();
+    EPANET::with_inp_file("src/impls/test_utils/net1.inp", &rpt, "").expect("ERROR OPENING PROJECT")
 }
 
 #[fixture]
 pub fn ph_close() -> EPANET {
-    EPANET::new("", "", FlowUnits::Cfs, HeadLossType::HazenWilliams)
+    let rpt = temp_rpt_path();
+    EPANET::new(&rpt, "", FlowUnits::Cfs, HeadLossType::HazenWilliams)
         .expect("ERROR CREATING PROJECT")
 }
 
@@ -37,7 +52,7 @@ pub fn after_step(ph: EPANET) -> EPANET {
         let t_step = ph
             .step_q()
             .expect("Failed to step through quality simulation");
-        println!("Time: {}s, TStep: {}s", t, t_step);
+        // Intentionally silent — no println to avoid noisy test output
         if t_step <= 0 || t >= t_stop {
             break;
         }

@@ -4,11 +4,11 @@
 
 use crate::bindings as ffi;
 use crate::epanet_error::*;
-use crate::types::node::{Node, NodeProperty, NodeType};
+use crate::types::node::{JunctionData, Node, NodeKind, NodeProperty, NodeType, ReservoirData, TankData};
 use crate::types::MAX_MSG_SIZE;
 use crate::types::{ActionCodeType, CountType::NodeCount};
 use crate::EPANET;
-use enum_primitive::FromPrimitive;
+use num_traits::FromPrimitive;
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::mem::MaybeUninit;
 
@@ -34,9 +34,61 @@ impl EPANET {
     }
 
     /// Retrieves a [`Node`] by its identifier.
-    pub fn node(&self, id: &str) -> Result<Node<'_>> {
+    pub fn get_node(&self, id: &str) -> Result<Node<'_>> {
         let index = self.get_node_index(id)?;
-        Node::from_index(self, index)
+        self.get_node_by_index(index)
+    }
+
+    pub fn get_node_by_index(&self, index: i32) -> Result<Node<'_>> {
+        let id = self.get_node_id(index)?;
+        let node_type = self.get_node_type(index)?;
+
+        let kind = match node_type {
+            NodeType::Junction => {
+                let pattern_index = self.get_node_value(index, NodeProperty::Pattern)? as i32;
+                let demand_pattern = if pattern_index > 0 {
+                    self.get_pattern_id(pattern_index)?
+                } else {
+                    String::new()
+                };
+
+                NodeKind::Junction(JunctionData {
+                    elevation: self.get_node_value(index, NodeProperty::Elevation)?,
+                    demand: self.get_node_value(index, NodeProperty::BaseDemand)?,
+                    demand_pattern,
+                })
+            }
+            NodeType::Tank => {
+                let curve_index = self.get_node_value(index, NodeProperty::VolCurve)? as i32;
+                let volume_curve = if curve_index > 0 {
+                    self.get_curve_id(curve_index)?
+                } else {
+                    String::new()
+                };
+
+                NodeKind::Tank(TankData {
+                    elevation: self.get_node_value(index, NodeProperty::Elevation)?,
+                    init_level: self.get_node_value(index, NodeProperty::TankLevel)?,
+                    min_level: self.get_node_value(index, NodeProperty::MinLevel)?,
+                    max_level: self.get_node_value(index, NodeProperty::MaxLevel)?,
+                    diameter: self.get_node_value(index, NodeProperty::TankDiam)?,
+                    min_volume: self.get_node_value(index, NodeProperty::MinVolume)?,
+                    volume_curve,
+                })
+            }
+            NodeType::Reservoir => {
+                NodeKind::Reservoir(ReservoirData {
+                    elevation: self.get_node_value(index, NodeProperty::Elevation)?,
+                })
+            }
+        };
+
+        Ok(Node {
+            project: self,
+            index,
+            id,
+            kind,
+        })
     }
 
     /// Deletes a node from the EPANET model.
@@ -78,7 +130,7 @@ impl EPANET {
     /// # See Also
     /// - `EN_deletenode` (EPANET C API)
     /// - [`ActionCodeType`] for possible adjustment actions when deleting a node.
-    pub(crate) fn delete_node(&self, id: i32, action_code: ActionCodeType) -> Result<()> {
+    pub fn delete_node(&self, id: i32, action_code: ActionCodeType) -> Result<()> {
         let code = unsafe { ffi::EN_deletenode(self.ph, id, action_code as i32) };
         check_error_with_context(
             code,
@@ -123,7 +175,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_getnodeindex (EPANET C API)
-    pub(crate) fn get_node_index(&self, id: &str) -> Result<i32> {
+    pub fn get_node_index(&self, id: &str) -> Result<i32> {
         let _id = CString::new(id)?;
         let mut out_index = MaybeUninit::uninit();
         let code = unsafe { ffi::EN_getnodeindex(self.ph, _id.as_ptr(), out_index.as_mut_ptr()) };
@@ -169,7 +221,7 @@ impl EPANET {
     /// # See Also
     /// - EN_getnodeid (EPANET C API)
     /// - [`MAX_MSG_SIZE`] for the size limit used for node IDs.
-    pub(crate) fn get_node_id(&self, index: i32) -> Result<String> {
+    pub fn get_node_id(&self, index: i32) -> Result<String> {
         let mut out_id: Vec<c_char> = vec![0; MAX_MSG_SIZE as usize + 1usize];
         let code = unsafe { ffi::EN_getnodeid(self.ph, index, out_id.as_mut_ptr()) };
         check_error_with_context(
@@ -219,7 +271,7 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_setnodeid (EPANET C API)
-    pub(crate) fn set_node_id(&self, index: i32, node_id: &str) -> Result<()> {
+    pub fn set_node_id(&self, index: i32, node_id: &str) -> Result<()> {
         let _id = CString::new(node_id)?;
         let code = unsafe { ffi::EN_setnodeid(self.ph, index, _id.as_ptr()) };
         check_error_with_context(
@@ -291,7 +343,7 @@ impl EPANET {
     /// Retrieves the value of a specific property for a single node.
     ///
     /// This thin wrapper delegates to the raw `EN_getnodevalue` FFI function.
-    pub(crate) fn get_node_value(&self, index: i32, node_property: NodeProperty) -> Result<f64> {
+    pub fn get_node_value(&self, index: i32, node_property: NodeProperty) -> Result<f64> {
         let mut value = MaybeUninit::<f64>::uninit();
         check_error_with_context(
             unsafe {
@@ -308,13 +360,12 @@ impl EPANET {
     /// Sets the value of a specific property for a single node.
     ///
     /// This thin wrapper delegates to the raw `EN_setnodevalue` FFI function.
-    pub(crate) fn set_node_value(
+    pub fn set_node_value(
         &self,
         index: i32,
         node_property: NodeProperty,
         value: f64,
     ) -> Result<()> {
-        let index = index;
         let code = unsafe { ffi::EN_setnodevalue(self.ph, index, node_property as i32, value) };
         check_error_with_context(
             code,
@@ -323,6 +374,62 @@ impl EPANET {
                 node_property, index
             ),
         )
+    }
+
+    pub fn set_junction_data(
+        &self,
+        index: i32,
+        elevation: f64,
+        demand: f64,
+        demand_pattern: &str,
+    ) -> Result<()> {
+        let _demand_pat = CString::new(demand_pattern)?;
+        check_error(unsafe {
+            ffi::EN_setjuncdata(self.ph, index, elevation, demand, _demand_pat.as_ptr())
+        })
+    }
+
+    pub fn set_tank_data(
+        &self,
+        index: i32,
+        elevation: f64,
+        init_level: f64,
+        min_level: f64,
+        max_level: f64,
+        diameter: f64,
+        min_volume: f64,
+        volume_curve: &str,
+    ) -> Result<()> {
+        let _volume_curve = CString::new(volume_curve)?;
+        check_error(unsafe {
+            ffi::EN_settankdata(
+                self.ph,
+                index,
+                elevation,
+                init_level,
+                min_level,
+                max_level,
+                diameter,
+                min_volume,
+                _volume_curve.as_ptr(),
+            )
+        })
+    }
+
+    pub fn get_coordinates(&self, index: i32) -> Result<(f64, f64)> {
+        let (mut x, mut y) = (0f64, 0f64);
+        check_error(unsafe { ffi::EN_getcoord(self.ph, index, &mut x, &mut y) })?;
+        Ok((x, y))
+    }
+
+    pub fn set_coordinates(&self, index: i32, x: f64, y: f64) -> Result<()> {
+        check_error(unsafe { ffi::EN_setcoord(self.ph, index, x, y) })
+    }
+
+    pub fn get_number_of_demands(&self, index: i32) -> Result<i32> {
+        let mut num_demands: i32 = 0;
+        check_error(unsafe { ffi::EN_getnumdemands(self.ph, index, &mut num_demands) })?;
+        Ok(num_demands)
     }
 }
 
@@ -415,7 +522,7 @@ mod tests {
         assert_eq!(ph.get_node_value(index, TankLevel).unwrap(), 120.0);
         assert_eq!(ph.get_node_value(index, MinLevel).unwrap(), 100.0);
         assert_eq!(ph.get_node_value(index, MaxLevel).unwrap(), 150.0);
-        assert_eq!(ph.get_node_value(index, TankDiam).unwrap(), 50.5);
+        assert!(approx_eq(ph.get_node_value(index, TankDiam).unwrap(), 50.5, 1e-10));
         assert!(approx_eq(
             ph.get_node_value(index, MinVolume).unwrap(),
             200296.167,

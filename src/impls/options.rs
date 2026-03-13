@@ -7,8 +7,9 @@ use crate::epanet_error::*;
 use crate::types::options::{FlowUnits, Option, QualityAnalysisInfo, QualityType, TimeParameter};
 use crate::types::MAX_ID_SIZE;
 use crate::EPANET;
-use enum_primitive::FromPrimitive;
+use num_traits::FromPrimitive;
 use std::ffi::{c_char, CString};
+use std::os::raw::c_long;
 
 /// ## Analysis Options APIs
 impl EPANET {
@@ -32,14 +33,14 @@ impl EPANET {
         check_error(unsafe { ffi::EN_setflowunits(self.ph, flow_units as i32) })
     }
 
-    pub fn get_time_parameter(&self, parameter: TimeParameter) -> Result<i64> {
-        let mut value: i64 = 0;
+    pub fn get_time_parameter(&self, parameter: TimeParameter) -> Result<i32> {
+        let mut value: c_long = 0;
         check_error(unsafe { ffi::EN_gettimeparam(self.ph, parameter as i32, &mut value) })?;
-        Ok(value)
+        Ok(value as i32)
     }
 
-    pub fn set_time_parameter(&self, parameter: TimeParameter, value: i64) -> Result<()> {
-        check_error(unsafe { ffi::EN_settimeparam(self.ph, parameter as i32, value) })
+    pub fn set_time_parameter(&self, parameter: TimeParameter, value: i32) -> Result<()> {
+        check_error(unsafe { ffi::EN_settimeparam(self.ph, parameter as i32, value as c_long) })
     }
 
     pub fn get_quality_info(&self) -> Result<QualityAnalysisInfo> {
@@ -123,7 +124,7 @@ impl EPANET {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::impls::test_utils::fixtures::ph;
+    use crate::impls::test_utils::fixtures::{approx_eq, ph};
     use rstest::rstest;
     use strum::IntoEnumIterator;
 
@@ -174,5 +175,37 @@ mod tests {
         }
 
         assert_eq!(test_values, ref_values);
+    }
+
+    #[rstest]
+    fn test_set_option(ph: EPANET) {
+        ph.set_option(Option::Trials, 50.0).unwrap();
+        assert!(approx_eq(ph.get_option(Option::Trials).unwrap(), 50.0, 0.01));
+    }
+
+    #[rstest]
+    fn test_get_set_flow_units(ph: EPANET) {
+        assert_eq!(ph.get_flow_units().unwrap(), FlowUnits::Gpm);
+        ph.set_flow_units(FlowUnits::Lps).unwrap();
+        assert_eq!(ph.get_flow_units().unwrap(), FlowUnits::Lps);
+    }
+
+    #[rstest]
+    fn test_get_quality_info(ph: EPANET) {
+        let info = ph.get_quality_info().unwrap();
+        assert_eq!(info.quality_type, QualityType::Chem);
+        assert_eq!(info.chem_name, "Chlorine");
+        assert_eq!(info.chem_units, "mg/L");
+
+        assert_eq!(ph.get_quality_type().unwrap(), QualityType::Chem);
+    }
+
+    #[rstest]
+    fn test_set_quality_type(ph: EPANET) {
+        ph.set_quality_type(QualityType::Age, "", "", "").unwrap();
+        assert_eq!(ph.get_quality_type().unwrap(), QualityType::Age);
+
+        ph.set_quality_type(QualityType::None, "", "", "").unwrap();
+        assert_eq!(ph.get_quality_type().unwrap(), QualityType::None);
     }
 }

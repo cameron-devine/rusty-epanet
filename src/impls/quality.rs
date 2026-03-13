@@ -6,7 +6,7 @@ use crate::epanet_error::*;
 use crate::ffi;
 use crate::types::analysis::InitHydOption;
 use crate::EPANET;
-use std::mem::MaybeUninit;
+use std::os::raw::c_long;
 
 /// ## Water Quality Analysis APIs
 impl EPANET {
@@ -32,12 +32,7 @@ impl EPANET {
     /// # See Also
     /// - EN_closeQ (EPANET C API)
     pub fn close_q(&self) -> Result<()> {
-        let result = unsafe { ffi::EN_closeQ(self.ph) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_closeQ(self.ph) })
     }
 
     /// Initializes the quality simulation.
@@ -66,12 +61,7 @@ impl EPANET {
     /// # See Also
     /// - EN_initQ (EPANET C API)
     pub fn init_q(&self, save_flag: InitHydOption) -> Result<()> {
-        let result = unsafe { ffi::EN_initQ(self.ph, save_flag as i32) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_initQ(self.ph, save_flag as i32) })
     }
 
     /// Advances to the next quality time step.
@@ -96,13 +86,9 @@ impl EPANET {
     /// # See Also
     /// - EN_nextQ (EPANET C API)
     pub fn next_q(&self) -> Result<u64> {
-        let mut out_t_step = MaybeUninit::uninit();
-        let result = unsafe { ffi::EN_nextQ(self.ph, out_t_step.as_mut_ptr()) };
-        if result == 0 {
-            Ok(unsafe { out_t_step.assume_init() as u64 })
-        } else {
-            Err(EPANETError::from(result))
-        }
+        let mut out_t_step: c_long = 0;
+        check_error(unsafe { ffi::EN_nextQ(self.ph, &mut out_t_step) })?;
+        Ok(out_t_step as u64)
     }
 
     /// Opens the quality simulation.
@@ -127,12 +113,7 @@ impl EPANET {
     /// # See Also
     /// - EN_openQ (EPANET C API)
     pub fn open_q(&self) -> Result<()> {
-        let result = unsafe { ffi::EN_openQ(self.ph) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_openQ(self.ph) })
     }
 
     /// Runs the quality simulation for the current time step.
@@ -157,13 +138,9 @@ impl EPANET {
     /// # See Also
     /// - EN_runQ (EPANET C API)
     pub fn run_q(&self) -> Result<u64> {
-        let mut out_current_time = MaybeUninit::uninit();
-        let result = unsafe { ffi::EN_runQ(self.ph, out_current_time.as_mut_ptr()) };
-        if result == 0 {
-            Ok(unsafe { out_current_time.assume_init() as u64 })
-        } else {
-            Err(EPANETError::from(result))
-        }
+        let mut out_current_time: c_long = 0;
+        check_error(unsafe { ffi::EN_runQ(self.ph, &mut out_current_time) })?;
+        Ok(out_current_time as u64)
     }
 
     /// Solves the entire quality simulation.
@@ -188,12 +165,7 @@ impl EPANET {
     /// # See Also
     /// - EN_solveQ (EPANET C API)
     pub fn solve_q(&self) -> Result<()> {
-        let result = unsafe { ffi::EN_solveQ(self.ph) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err(EPANETError::from(result))
-        }
+        check_error(unsafe { ffi::EN_solveQ(self.ph) })
     }
 
     /// Steps through the quality simulation.
@@ -218,13 +190,9 @@ impl EPANET {
     /// # See Also
     /// - EN_stepQ (EPANET C API)
     pub fn step_q(&self) -> Result<u64> {
-        let mut out_time_left = MaybeUninit::uninit();
-        let result = unsafe { ffi::EN_stepQ(self.ph, out_time_left.as_mut_ptr()) };
-        if result == 0 {
-            Ok(unsafe { out_time_left.assume_init() as u64 })
-        } else {
-            Err(EPANETError::from(result))
-        }
+        let mut out_time_left: c_long = 0;
+        check_error(unsafe { ffi::EN_stepQ(self.ph, &mut out_time_left) })?;
+        Ok(out_time_left as u64)
     }
 }
 
