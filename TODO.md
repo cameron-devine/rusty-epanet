@@ -172,7 +172,7 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 - [x] Add tests for project title and comment operations
 - [x] Add integration test: build a network from scratch, solve, read results
 - [ ] Consider property-based testing with `proptest` for enum round-trips
-- [ ] Test thread safety claims (Send + Sync) - EPANET C library may not actually be thread-safe across projects
+- [x] Test thread safety claims (Send + Sync) - EPANET C library may not actually be thread-safe across projects
 
 ## Code Quality
 
