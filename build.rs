@@ -34,9 +34,11 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=epanet2");
     } else {
         println!("cargo:rustc-link-lib=static=epanet2");
-        if cfg!(target_os = "linux") || cfg!(target_os = "macos") {
-            println!("cargo:rustc-link-lib=dylib=m");
-        }
+    }
+
+    // EPANET C code uses math functions (pow, sqrt, etc.)
+    if cfg!(target_os = "linux") || cfg!(target_os = "macos") {
+        println!("cargo:rustc-link-lib=dylib=m");
     }
 
     // The bindgen::Builder is the main entry point
