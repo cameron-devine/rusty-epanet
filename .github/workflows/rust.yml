@@ -38,4 +38,7 @@ jobs:
         run: cargo build --verbose --features ${{ matrix.link }} --no-default-features
 
       - name: Run tests
-        run: cargo test --verbose --features ${{ matrix.link }} --no-default-features
+        # EPANET C library uses strtok() (not thread-safe) during input parsing.
+        # Parallel test threads corrupt strtok's global state, causing intermittent
+        # error 200 ("one or more errors in input file"). Serialize tests to avoid this.
+        run: cargo test --verbose --features ${{ matrix.link }} --no-default-features -- --test-threads=1
