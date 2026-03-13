@@ -96,6 +96,7 @@ impl<'a> Curve<'a> {
 }
 
 /// Represents the type of a curve in an EPANET project.
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum CurveType {

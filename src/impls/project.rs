@@ -183,7 +183,7 @@ pub fn run_project_with_callback<F: FnMut(&str)>(
     mut cb: F,
 ) -> Result<()> {
     thread_local! {
-        static CALLBACK: RefCell<Option<*mut ()>> = RefCell::new(None);
+        static CALLBACK: RefCell<Option<*mut ()>> = const { RefCell::new(None) };
     }
 
     unsafe extern "C" fn trampoline(msg: *mut c_char) {

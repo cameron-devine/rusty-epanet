@@ -2,6 +2,7 @@ use crate::bindings::*;
 use crate::EPANET;
 use num_derive::FromPrimitive;
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum RuleObject {
@@ -10,6 +11,7 @@ pub enum RuleObject {
     System = EN_RuleObject_EN_R_SYSTEM as i32, // Clause refers to a system parameter (e.g., time)
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum RuleVariable {
@@ -28,6 +30,7 @@ pub enum RuleVariable {
     DrainTime = EN_RuleVariable_EN_R_DRAINTIME as i32, // Time to drain a tank
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum RuleOperator {
@@ -43,6 +46,7 @@ pub enum RuleOperator {
     Above = EN_RuleOperator_EN_R_ABOVE as i32, // Is above
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum RuleStatus {
@@ -50,6 +54,7 @@ pub enum RuleStatus {
     IsClosed = EN_RuleStatus_EN_R_IS_CLOSED as i32, // Link is closed
     IsActive = EN_RuleStatus_EN_R_IS_ACTIVE as i32, // Control valve is active
 }
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum LogicalOperator {

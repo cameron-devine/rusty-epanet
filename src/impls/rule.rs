@@ -199,6 +199,7 @@ impl EPANET {
         })
     }
 
+    #[allow(dead_code)]
     fn set_premise_index(
         &self,
         rule_index: i32,
@@ -210,6 +211,7 @@ impl EPANET {
         })
     }
 
+    #[allow(dead_code)]
     fn set_premise_status(
         &self,
         rule_index: i32,
@@ -221,6 +223,7 @@ impl EPANET {
         })
     }
 
+    #[allow(dead_code)]
     fn set_premise_value(
         &self,
         rule_index: i32,

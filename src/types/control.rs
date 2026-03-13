@@ -122,6 +122,7 @@ impl<'a> Control<'a> {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum ControlType {

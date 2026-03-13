@@ -4,6 +4,7 @@ use crate::EPANET;
 use num_derive::FromPrimitive;
 use crate::types::ActionCodeType;
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum MixingModel {
@@ -13,6 +14,7 @@ pub enum MixingModel {
     Lifo = EN_MixingModel_EN_LIFO as i32, // Last in, first out model
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum NodeProperty {
@@ -51,6 +53,7 @@ pub enum NodeProperty {
     FullDemand = EN_NodeProperty_EN_FULLDEMAND as i32, // Current consumer demand requested (read only)
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum NodeType {
@@ -59,6 +62,7 @@ pub enum NodeType {
     Tank = EN_NodeType_EN_TANK as i32, // Storage tank node
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum SourceType {

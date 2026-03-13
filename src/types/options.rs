@@ -10,6 +10,7 @@ pub struct Event {
     pub element_index: i32,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum AnalysisStatistic {
@@ -23,6 +24,7 @@ pub enum AnalysisStatistic {
     LeakageLoss = EN_AnalysisStatistic_EN_LEAKAGELOSS as i32, // % flow lost to system leakage
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum FlowUnits {
@@ -39,6 +41,7 @@ pub enum FlowUnits {
     Cms = EN_FlowUnits_EN_CMS as i32, // Cubic meters per second
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum HeadLossType {
@@ -47,6 +50,7 @@ pub enum HeadLossType {
     ChezyManning = EN_HeadLossType_EN_CM as i32, // Chezy-Manning
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum PressUnits {
@@ -55,6 +59,7 @@ pub enum PressUnits {
     Meters = EN_PressUnits_EN_METERS as i32, // Meters
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[cfg_attr(test, derive(EnumIter))]
 #[repr(i32)]
@@ -88,6 +93,7 @@ pub enum Option {
     StatusReport = EN_Option_EN_STATUS_REPORT as i32, // Type of status report to produce
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum QualityType {
@@ -97,6 +103,7 @@ pub enum QualityType {
     Trace = EN_QualityType_EN_TRACE as i32, // Source tracing analysis
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum StatisticType {
@@ -107,6 +114,7 @@ pub enum StatisticType {
     Range = EN_StatisticType_EN_RANGE as i32, // Report maximum - minimum over simulation period
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum StatusReport {
@@ -115,6 +123,7 @@ pub enum StatusReport {
     FullReport = EN_StatusReport_EN_FULL_REPORT as i32, // Full level of status reporting
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[cfg_attr(test, derive(EnumIter))]
 #[repr(i32)]
@@ -137,6 +146,7 @@ pub enum TimeParameter {
     NextEventTank = EN_TimeParameter_EN_NEXTEVENTTANK as i32, // Index of tank with shortest time to become empty or full (read only)
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive)]
 #[repr(i32)]
 pub enum TimestepEvent {
