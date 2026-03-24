@@ -1,86 +1,62 @@
-//! Analysis solver types using the typestate pattern.
+//! Unified typestate solver for EPANET hydraulic and water quality simulations.
 //!
-//! This module provides typestate-based solvers for hydraulic and water quality analyses.
-//! The typestate pattern uses Rust's type system to enforce correct API usage at compile time,
-//! making it impossible to call methods in the wrong order (e.g., stepping before initializing).
+//! This module provides a single [`Solver<S>`] struct whose type parameter `S` encodes
+//! every valid simulation path from the EPANET toolkit documentation, making invalid
+//! sequences compile errors.
 //!
-//! # Solver Trait
+//! # Valid Simulation Paths
 //!
-//! Both [`HydraulicSolver`] and [`QualitySolver`] implement the [`Solver`] trait, which provides
-//! access to the underlying EPANET project via [`project()`](Solver::project). They share the
-//! same state markers ([`Closed`], [`Initialized`], [`Running`], [`Solved`]) and the same
-//! [`StepResult`] enum for stepping through simulations.
+//! | Path | Steps |
+//! |---|---|
+//! | H one-shot | [`solve_h`](Solver::solve_h) |
+//! | H step-by-step | [`init_h`] → [`run_h`] → loop{[`next_h`]} → [`close_h`] |
+//! | H + Q simultaneous | [`init_h`] → [`init_q`] → [`run`] → loop{[`next`]} → [`close`] |
+//! | Q after H | H (one-shot or step-by-step) → [`init_q`] → [`run_q`] → loop{[`step_q`]/[`next_q`]} → [`close_q`] |
+//! | Q from file | [`solve_h`] → [`save_hyd_file`] / [`use_hyd_file`] → quality steps |
 //!
-//! # Hydraulic Solver
+//! [`init_h`]: Solver::init_h
+//! [`run_h`]: Solver::run_h
+//! [`next_h`]: Solver::next_h
+//! [`close_h`]: Solver::close_h
+//! [`init_q`]: Solver::init_q
+//! [`run`]: Solver::run
+//! [`next`]: Solver::next
+//! [`close`]: Solver::close
+//! [`run_q`]: Solver::run_q
+//! [`step_q`]: Solver::step_q
+//! [`next_q`]: Solver::next_q
+//! [`close_q`]: Solver::close_q
+//! [`save_hyd_file`]: Solver::save_hyd_file
+//! [`use_hyd_file`]: Solver::use_hyd_file
 //!
-//! The [`HydraulicSolver`] provides two modes of operation:
+//! # Entry Point
 //!
-//! 1. **One-shot solve**: Call [`solve()`](HydraulicSolver::solve) to run the entire simulation
-//! 2. **Step-by-step**: Call [`init()`](HydraulicSolver::init) then loop with
-//!    [`run()`](HydraulicSolver::run) and [`next()`](HydraulicSolver::next)
+//! Use [`EPANET::solver`] to obtain a `Solver<HClosed>`.
 //!
-//! # Quality Solver
-//!
-//! The [`QualitySolver`] requires hydraulics to be solved first and provides similar modes:
-//!
-//! 1. **One-shot solve**: Call [`solve()`](QualitySolver::solve) to run the entire simulation
-//! 2. **Step-by-step**: Call [`init()`](QualitySolver::init) then loop with
-//!    [`run()`](QualitySolver::run) and [`step()`](QualitySolver::step) or [`next()`](QualitySolver::next)
-//!
-//! # Example: Hydraulic Analysis
+//! # Example: Hydraulic one-shot
 //!
 //! ```ignore
-//! use epanet::EPANET;
-//! use epanet::types::analysis::{InitHydOption, StepResult};
-//!
-//! let epanet = EPANET::with_inp_file("network.inp", "", "")?;
-//!
-//! // One-shot solve
-//! let solver = epanet.hydraulic_solver().solve()?;
+//! let solver = epanet.solver().solve_h()?;
 //! solver.save()?;
-//!
-//! // Or step-by-step
-//! let mut solver = epanet.hydraulic_solver().init(InitHydOption::Save)?.run()?;
-//! loop {
-//!     match solver.next()? {
-//!         StepResult::Continue { current_time, next_step } => {
-//!             println!("Time: {}, next step: {}", current_time, next_step);
-//!         }
-//!         StepResult::Done { current_time } => {
-//!             println!("Done at time: {}", current_time);
-//!             solver.close()?;
-//!             break;
-//!         }
-//!     }
-//! }
 //! ```
 //!
-//! # Example: Quality Analysis
+//! # Example: Step-by-step hydraulics then quality
 //!
 //! ```ignore
-//! use epanet::EPANET;
 //! use epanet::types::analysis::{InitHydOption, StepResult};
 //!
-//! let epanet = EPANET::with_inp_file("network.inp", "", "")?;
-//!
-//! // Solve hydraulics first
-//! epanet.hydraulic_solver().solve()?.save()?;
-//!
-//! // One-shot quality solve
-//! epanet.quality_solver().solve()?;
-//!
-//! // Or step-by-step
-//! let mut solver = epanet.quality_solver().init(InitHydOption::Save)?.run()?;
+//! let mut solver = epanet.solver().init_h(InitHydOption::Save)?.run_h()?;
 //! loop {
-//!     match solver.next()? {
-//!         StepResult::Continue { current_time, next_step } => {
-//!             println!("Time: {}, next step: {}", current_time, next_step);
-//!         }
-//!         StepResult::Done { current_time } => {
-//!             println!("Done at time: {}", current_time);
-//!             solver.close()?;
-//!             break;
-//!         }
+//!     match solver.next_h()? {
+//!         StepResult::Continue { .. } => {}
+//!         StepResult::Done { .. } => break,
+//!     }
+//! }
+//! let mut solver = solver.close_h()?.init_q(InitHydOption::Save)?.run_q()?;
+//! loop {
+//!     match solver.step_q()? {
+//!         StepResult::Continue { .. } => {}
+//!         StepResult::Done { .. } => { solver.close_q()?; break; }
 //!     }
 //! }
 //! ```
@@ -89,7 +65,12 @@ use crate::bindings::*;
 use crate::epanet_error::*;
 use crate::{ffi, EPANET};
 use num_derive::FromPrimitive;
+use std::ffi::CString;
 use std::marker::PhantomData;
+
+// =============================================================================
+// InitHydOption
+// =============================================================================
 
 /// Initialization options for hydraulic and quality analyses.
 ///
@@ -109,35 +90,35 @@ pub enum InitHydOption {
 }
 
 // =============================================================================
-// Solver States
+// State marker types (9 total)
 // =============================================================================
 
-/// Marker type for a closed solver.
-pub struct Closed;
+/// Marker: initial state — hydraulic engine not yet opened.
+pub struct HClosed;
 
-/// Marker type for an initialized solver (ready to run).
-pub struct Initialized;
+/// Marker: hydraulic engine opened and initialized, ready to run.
+pub struct HInitialized;
 
-/// Marker type for a running solver (stepping through simulation).
-pub struct Running;
+/// Marker: hydraulic + quality both initialized for simultaneous simulation.
+pub struct HQInitialized;
 
-/// Marker type for a solved solver (one-shot solve complete).
-pub struct Solved;
+/// Marker: hydraulic solver stepping (step-by-step only).
+pub struct HRunning;
 
-// =============================================================================
-// Solver Trait
-// =============================================================================
+/// Marker: simultaneous H+Q solver stepping.
+pub struct HQRunning;
 
-/// Common interface for EPANET solvers.
-///
-/// Both [`HydraulicSolver`] and [`QualitySolver`] implement this trait, providing
-/// access to the underlying EPANET project.
-pub trait Solver<'a> {
-    /// Returns a reference to the EPANET project.
-    ///
-    /// Use this to read simulation results at the current timestep.
-    fn project(&self) -> &'a EPANET;
-}
+/// Marker: hydraulic solve complete (one-shot or closed after stepping).
+pub struct HydDone;
+
+/// Marker: hydraulics loaded from a saved binary file.
+pub struct HydFileLoaded;
+
+/// Marker: quality solver opened and initialized, ready to run.
+pub struct QInitialized;
+
+/// Marker: quality solver stepping (step-by-step).
+pub struct QRunning;
 
 // =============================================================================
 // StepResult
@@ -145,8 +126,7 @@ pub trait Solver<'a> {
 
 /// Result of advancing a simulation step.
 ///
-/// Returned by stepping methods ([`HydraulicSolver::next`], [`QualitySolver::step`],
-/// [`QualitySolver::next`]) to report the current simulation time and whether
+/// Returned by stepping methods to report the current simulation time and whether
 /// more steps remain.
 pub enum StepResult {
     /// Simulation has more steps to run.
@@ -164,138 +144,234 @@ pub enum StepResult {
 }
 
 // =============================================================================
-// EPANET entry points
+// Unified Solver struct
 // =============================================================================
 
-impl EPANET {
-    /// Creates a new hydraulic solver in the Closed state.
-    ///
-    /// This is the entry point for hydraulic analysis using the typestate pattern.
-    /// The returned solver enforces correct API usage at compile time.
-    ///
-    /// # See Also
-    ///
-    /// - [`HydraulicSolver`] for available operations
-    /// - [`quality_solver`](Self::quality_solver) for water quality analysis
-    pub fn hydraulic_solver(&self) -> HydraulicSolver<'_, Closed> {
-        HydraulicSolver {
-            project: self,
-            current_time: 0,
-            state: PhantomData,
-        }
-    }
-
-    /// Creates a new quality solver in the Closed state.
-    ///
-    /// This is the entry point for water quality analysis using the typestate pattern.
-    /// The returned solver enforces correct API usage at compile time.
-    ///
-    /// **Important:** Hydraulic analysis must be completed before running quality analysis.
-    /// Either call [`HydraulicSolver::solve`] or complete the step-by-step hydraulic
-    /// simulation first.
-    ///
-    /// # See Also
-    ///
-    /// - [`QualitySolver`] for available operations
-    /// - [`hydraulic_solver`](Self::hydraulic_solver) for hydraulic analysis
-    pub fn quality_solver(&self) -> QualitySolver<'_, Closed> {
-        QualitySolver {
-            project: self,
-            current_time: 0,
-            needs_close: false,
-            state: PhantomData,
-        }
-    }
-}
-
-// =============================================================================
-// Hydraulic Solver Implementation
-// =============================================================================
-
-/// A typestate-based hydraulic solver for EPANET simulations.
+/// A unified typestate-based solver for EPANET hydraulic and water quality simulations.
 ///
-/// This struct uses the typestate pattern to enforce correct API usage at compile time.
-/// The `State` type parameter tracks the current state of the solver, and methods are
-/// only available in appropriate states.
+/// The `S` type parameter tracks the current simulation state. Methods are only
+/// available in the appropriate states, making invalid sequences compile errors.
 ///
-/// # States
+/// # Entry Point
 ///
-/// - [`Closed`]: Initial state. Can call [`solve()`](Self::solve) or [`init()`](Self::init).
-/// - [`Initialized`]: Ready to run. Can call [`run()`](Self::run) to start stepping.
-/// - [`Running`]: Actively stepping. Can call [`next()`](Self::next), [`save()`](Self::save),
-///   and [`close()`](Self::close).
-/// - [`Solved`]: One-shot solve complete. Can call [`save()`](Self::save).
+/// Use [`EPANET::solver`] to obtain a `Solver<HClosed>`.
 ///
 /// # Drop Safety
 ///
-/// If the solver is dropped without calling [`close()`](Self::close), the Drop
-/// implementation will automatically close the hydraulic engine to prevent resource leaks.
-pub struct HydraulicSolver<'a, State = Closed> {
+/// If dropped without explicit close, the `Drop` impl automatically calls
+/// `EN_closeH` and/or `EN_closeQ` as needed to prevent resource leaks.
+pub struct Solver<'a, S = HClosed> {
     project: &'a EPANET,
     current_time: i64,
-    state: PhantomData<State>,
+    /// True when `EN_openH` was called but `EN_closeH` has not yet been called.
+    needs_close_h: bool,
+    /// True when `EN_openQ` was called but `EN_closeQ` has not yet been called.
+    needs_close_q: bool,
+    state: PhantomData<S>,
 }
 
-impl<'a, State> Solver<'a> for HydraulicSolver<'a, State> {
-    fn project(&self) -> &'a EPANET {
+impl<'a, S> Solver<'a, S> {
+    /// Returns a reference to the underlying EPANET project.
+    ///
+    /// Use this to read simulation results at the current timestep.
+    pub fn project(&self) -> &'a EPANET {
         self.project
     }
 }
 
-impl<'a> HydraulicSolver<'a, Closed> {
-    /// Full solve in one shot — no stepping needed.
+impl<'a, S> Drop for Solver<'a, S> {
+    fn drop(&mut self) {
+        unsafe {
+            if self.needs_close_h {
+                ffi::EN_closeH(self.project.ph);
+            }
+            if self.needs_close_q {
+                ffi::EN_closeQ(self.project.ph);
+            }
+        }
+    }
+}
+
+// =============================================================================
+// EPANET entry point
+// =============================================================================
+
+impl EPANET {
+    /// Creates a new solver in the initial [`HClosed`] state.
     ///
-    /// Internally calls EN_openH, EN_initH, EN_runH, EN_nextH, and EN_closeH.
-    pub fn solve(self) -> Result<HydraulicSolver<'a, Solved>> {
+    /// This is the single entry point for all typestate-based hydraulic and water
+    /// quality simulations.
+    pub fn solver(&self) -> Solver<'_, HClosed> {
+        Solver {
+            project: self,
+            current_time: 0,
+            needs_close_h: false,
+            needs_close_q: false,
+            state: PhantomData,
+        }
+    }
+}
+
+// =============================================================================
+// HClosed → {HydDone, HInitialized, HydFileLoaded}
+// =============================================================================
+
+impl<'a> Solver<'a, HClosed> {
+    /// Runs a complete hydraulic simulation in one shot.
+    ///
+    /// Internally calls `EN_solveH`.
+    pub fn solve_h(self) -> Result<Solver<'a, HydDone>> {
         let project = self.project;
         std::mem::forget(self);
 
         check_error(unsafe { ffi::EN_solveH(project.ph) })?;
-        Ok(HydraulicSolver {
+        Ok(Solver {
             project,
             current_time: 0,
+            needs_close_h: false,
+            needs_close_q: false,
             state: PhantomData,
         })
     }
 
-    /// Open + init for manual stepping.
-    pub fn init(self, option: InitHydOption) -> Result<HydraulicSolver<'a, Initialized>> {
+    /// Opens and initializes the hydraulic solver for step-by-step simulation.
+    ///
+    /// Calls `EN_openH` + `EN_initH`.
+    ///
+    /// # Parameters
+    ///
+    /// - `option`: Controls whether results are saved and whether flows are re-initialized.
+    pub fn init_h(self, option: InitHydOption) -> Result<Solver<'a, HInitialized>> {
         let project = self.project;
         std::mem::forget(self);
 
         check_error(unsafe { ffi::EN_openH(project.ph) })?;
         check_error(unsafe { ffi::EN_initH(project.ph, option as i32) })?;
-        Ok(HydraulicSolver {
+        Ok(Solver {
             project,
             current_time: 0,
+            needs_close_h: true,
+            needs_close_q: false,
+            state: PhantomData,
+        })
+    }
+
+    /// Loads hydraulic results from a previously saved binary file.
+    ///
+    /// Calls `EN_usehydfile`. After loading, quality analysis can be run
+    /// without re-running hydraulics.
+    ///
+    /// # Parameters
+    ///
+    /// - `path`: Path to the saved hydraulics file.
+    pub fn use_hyd_file(self, path: &str) -> Result<Solver<'a, HydFileLoaded>> {
+        let project = self.project;
+        std::mem::forget(self);
+
+        let c_path = CString::new(path).expect("path contains null bytes");
+        check_error(unsafe { ffi::EN_usehydfile(project.ph, c_path.as_ptr()) })?;
+        Ok(Solver {
+            project,
+            current_time: 0,
+            needs_close_h: false,
+            needs_close_q: false,
             state: PhantomData,
         })
     }
 }
 
-impl<'a> HydraulicSolver<'a, Initialized> {
-    /// Run the first timestep, transitioning to Running state.
-    pub fn run(self) -> Result<HydraulicSolver<'a, Running>> {
+// =============================================================================
+// HInitialized → {HRunning, HQInitialized}
+// =============================================================================
+
+impl<'a> Solver<'a, HInitialized> {
+    /// Runs the first hydraulic time step, transitioning to [`HRunning`].
+    ///
+    /// Calls `EN_runH`.
+    pub fn run_h(self) -> Result<Solver<'a, HRunning>> {
         let project = self.project;
+        let needs_close_h = self.needs_close_h;
         std::mem::forget(self);
 
         let mut current_time: std::os::raw::c_long = 0;
         check_error(unsafe { ffi::EN_runH(project.ph, &mut current_time) })?;
-        Ok(HydraulicSolver {
+        Ok(Solver {
             project,
             current_time: current_time as i64,
+            needs_close_h,
+            needs_close_q: false,
+            state: PhantomData,
+        })
+    }
+
+    /// Opens and initializes the quality solver for simultaneous H+Q simulation.
+    ///
+    /// Calls `EN_openQ` + `EN_initQ`. Use this before calling [`run`](Solver::run)
+    /// to start the simultaneous loop.
+    ///
+    /// # Parameters
+    ///
+    /// - `option`: Controls whether quality results are saved.
+    pub fn init_q(self, option: InitHydOption) -> Result<Solver<'a, HQInitialized>> {
+        let project = self.project;
+        let needs_close_h = self.needs_close_h;
+        std::mem::forget(self);
+
+        check_error(unsafe { ffi::EN_openQ(project.ph) })?;
+        check_error(unsafe { ffi::EN_initQ(project.ph, option as i32) })?;
+        Ok(Solver {
+            project,
+            current_time: 0,
+            needs_close_h,
+            needs_close_q: true,
             state: PhantomData,
         })
     }
 }
 
-impl<'a> HydraulicSolver<'a, Running> {
-    /// Advance to the next timestep.
+// =============================================================================
+// HQInitialized → HQRunning
+// =============================================================================
+
+impl<'a> Solver<'a, HQInitialized> {
+    /// Runs the first simultaneous H+Q time step, transitioning to [`HQRunning`].
     ///
-    /// Returns [`StepResult::Continue`] with the current time and next step duration,
-    /// or [`StepResult::Done`] with the final time when the simulation is complete.
+    /// Calls `EN_runH` + `EN_runQ`.
+    pub fn run(self) -> Result<Solver<'a, HQRunning>> {
+        let project = self.project;
+        let needs_close_h = self.needs_close_h;
+        let needs_close_q = self.needs_close_q;
+        std::mem::forget(self);
+
+        let mut current_time: std::os::raw::c_long = 0;
+        check_error(unsafe { ffi::EN_runH(project.ph, &mut current_time) })?;
+        let mut _q_time: std::os::raw::c_long = 0;
+        check_error(unsafe { ffi::EN_runQ(project.ph, &mut _q_time) })?;
+        Ok(Solver {
+            project,
+            current_time: current_time as i64,
+            needs_close_h,
+            needs_close_q,
+            state: PhantomData,
+        })
+    }
+}
+
+// =============================================================================
+// HRunning → step, save, close_h → HydDone
+// =============================================================================
+
+impl<'a> Solver<'a, HRunning> {
+    /// Advances to the next hydraulic time step.
+    ///
+    /// Calls `EN_nextH`. If more steps remain, also calls `EN_runH`.
+    ///
+    /// # Returns
+    ///
+    /// - [`StepResult::Continue`]: more steps remain; `next_step` is time to next event.
+    /// - [`StepResult::Done`]: simulation complete; call [`close_h`](Self::close_h).
     #[allow(clippy::should_implement_trait)]
-    pub fn next(&mut self) -> Result<StepResult> {
+    pub fn next_h(&mut self) -> Result<StepResult> {
         let mut time_to_next: std::os::raw::c_long = 0;
         check_error(unsafe { ffi::EN_nextH(self.project.ph, &mut time_to_next) })?;
 
@@ -314,162 +390,237 @@ impl<'a> HydraulicSolver<'a, Running> {
         }
     }
 
-    /// Saves hydraulic results to the output file.
+    /// Saves hydraulic results to the binary output file.
+    ///
+    /// Calls `EN_saveH`.
     pub fn save(&self) -> Result<()> {
         check_error(unsafe { ffi::EN_saveH(self.project.ph) })
     }
 
-    /// Closes the hydraulic solver and frees resources.
+    /// Saves hydraulic results to a named binary file for later use.
     ///
-    /// This consumes the solver and explicitly closes the hydraulic engine.
-    /// If not called, the Drop implementation will close it automatically.
+    /// Calls `EN_savehydfile`. The saved file can be loaded with
+    /// [`use_hyd_file`](Solver::use_hyd_file).
+    ///
+    /// # Parameters
+    ///
+    /// - `path`: Destination file path.
+    pub fn save_hyd_file(&self, path: &str) -> Result<()> {
+        let c_path = CString::new(path).expect("path contains null bytes");
+        check_error(unsafe { ffi::EN_savehydfile(self.project.ph, c_path.as_ptr()) })
+    }
+
+    /// Closes the hydraulic solver and transitions to [`HydDone`].
+    ///
+    /// Calls `EN_closeH`. Returns a `Solver<HydDone>` so that quality analysis
+    /// can be chained immediately.
+    pub fn close_h(self) -> Result<Solver<'a, HydDone>> {
+        let project = self.project;
+        let needs_close_q = self.needs_close_q;
+        std::mem::forget(self);
+
+        check_error(unsafe { ffi::EN_closeH(project.ph) })?;
+        Ok(Solver {
+            project,
+            current_time: 0,
+            needs_close_h: false,
+            needs_close_q,
+            state: PhantomData,
+        })
+    }
+}
+
+// =============================================================================
+// HQRunning → step, close
+// =============================================================================
+
+impl<'a> Solver<'a, HQRunning> {
+    /// Advances the simultaneous H+Q simulation by one step.
+    ///
+    /// Calls `EN_nextH` + `EN_nextQ`. If more steps remain, also calls
+    /// `EN_runH` + `EN_runQ`.
+    ///
+    /// # Returns
+    ///
+    /// - [`StepResult::Continue`]: more steps remain; `next_step` is the minimum
+    ///   of the H and Q times to next.
+    /// - [`StepResult::Done`]: simulation complete; call [`close`](Self::close).
+    #[allow(clippy::should_implement_trait)]
+    pub fn next(&mut self) -> Result<StepResult> {
+        let mut time_to_next_h: std::os::raw::c_long = 0;
+        check_error(unsafe { ffi::EN_nextH(self.project.ph, &mut time_to_next_h) })?;
+        let mut time_to_next_q: std::os::raw::c_long = 0;
+        check_error(unsafe { ffi::EN_nextQ(self.project.ph, &mut time_to_next_q) })?;
+
+        if time_to_next_h == 0 || time_to_next_q == 0 {
+            Ok(StepResult::Done {
+                current_time: self.current_time,
+            })
+        } else {
+            let mut current_time: std::os::raw::c_long = 0;
+            check_error(unsafe { ffi::EN_runH(self.project.ph, &mut current_time) })?;
+            let mut _q_time: std::os::raw::c_long = 0;
+            check_error(unsafe { ffi::EN_runQ(self.project.ph, &mut _q_time) })?;
+            self.current_time = current_time as i64;
+            Ok(StepResult::Continue {
+                current_time: current_time as i64,
+                next_step: time_to_next_h.min(time_to_next_q) as i64,
+            })
+        }
+    }
+
+    /// Closes both the hydraulic and quality solvers.
+    ///
+    /// Calls `EN_closeH` + `EN_closeQ`.
     pub fn close(self) -> Result<()> {
         let project = self.project;
         std::mem::forget(self);
 
-        check_error(unsafe { ffi::EN_closeH(project.ph) })
+        check_error(unsafe { ffi::EN_closeH(project.ph) })?;
+        check_error(unsafe { ffi::EN_closeQ(project.ph) })
     }
 }
 
-impl<'a> HydraulicSolver<'a, Solved> {
-    /// Saves hydraulic results to the output file.
+// =============================================================================
+// HydDone → save, save_hyd_file, solve_q, init_q → QInitialized
+// =============================================================================
+
+impl<'a> Solver<'a, HydDone> {
+    /// Saves hydraulic results to the binary output file.
+    ///
+    /// Calls `EN_saveH`.
     pub fn save(&self) -> Result<()> {
         check_error(unsafe { ffi::EN_saveH(self.project.ph) })
     }
-}
 
-/// Safety net — if someone drops the solver without calling close(),
-/// make sure the C engine cleans up.
-impl<'a, State> Drop for HydraulicSolver<'a, State> {
-    fn drop(&mut self) {
-        // EN_closeH is safe to call even if not opened — it's a no-op.
-        unsafe {
-            ffi::EN_closeH(self.project.ph);
-        }
-    }
-}
-
-// =============================================================================
-// Quality Solver Implementation
-// =============================================================================
-
-/// A typestate-based water quality solver for EPANET simulations.
-///
-/// This struct uses the typestate pattern to enforce correct API usage at compile time.
-/// The `State` type parameter tracks the current state of the solver, and methods are
-/// only available in appropriate states.
-///
-/// **Important:** Hydraulic analysis must be completed before running quality analysis.
-/// Use [`EPANET::hydraulic_solver`] to solve hydraulics first.
-///
-/// # States
-///
-/// - [`Closed`]: Initial state. Can call [`solve()`](Self::solve) or [`init()`](Self::init).
-/// - [`Initialized`]: Ready to run. Can call [`run()`](Self::run) to start stepping.
-/// - [`Running`]: Actively stepping. Can call [`step()`](Self::step), [`next()`](Self::next),
-///   and [`close()`](Self::close).
-/// - [`Solved`]: One-shot solve complete. No cleanup needed.
-///
-/// # Stepping Methods
-///
-/// The quality solver provides two methods for advancing the simulation:
-///
-/// - [`step()`](QualitySolver::step): Advances by one water quality time step.
-/// - [`next()`](QualitySolver::next): Advances to the next reporting time step.
-///
-/// # Drop Safety
-///
-/// If the solver is dropped without calling [`close()`](Self::close), the Drop
-/// implementation will automatically close the quality engine to prevent resource leaks.
-pub struct QualitySolver<'a, State = Closed> {
-    project: &'a EPANET,
-    current_time: i64,
-    /// Whether EN_closeQ needs to be called on drop.
-    /// False for Closed (never opened) and Solved (EN_solveQ closes internally).
-    /// True for Initialized, Running (step-by-step path).
-    needs_close: bool,
-    state: PhantomData<State>,
-}
-
-impl<'a, State> Solver<'a> for QualitySolver<'a, State> {
-    fn project(&self) -> &'a EPANET {
-        self.project
-    }
-}
-
-impl<'a> QualitySolver<'a, Closed> {
-    /// Runs the complete water quality simulation in one shot.
+    /// Saves hydraulic results to a named binary file for later use.
     ///
-    /// Internally calls EN_openQ, EN_initQ, EN_runQ, EN_nextQ, and EN_closeQ.
+    /// Calls `EN_savehydfile`.
     ///
-    /// **Prerequisite:** Hydraulic analysis must be completed first.
-    pub fn solve(self) -> Result<QualitySolver<'a, Solved>> {
+    /// # Parameters
+    ///
+    /// - `path`: Destination file path.
+    pub fn save_hyd_file(&self, path: &str) -> Result<()> {
+        let c_path = CString::new(path).expect("path contains null bytes");
+        check_error(unsafe { ffi::EN_savehydfile(self.project.ph, c_path.as_ptr()) })
+    }
+
+    /// Runs a complete water quality simulation in one shot.
+    ///
+    /// Calls `EN_solveQ`. No explicit close needed — `EN_solveQ` handles cleanup.
+    ///
+    /// **Prerequisite:** Hydraulics must be solved and saved first.
+    pub fn solve_q(self) -> Result<()> {
         let project = self.project;
         std::mem::forget(self);
 
-        check_error(unsafe { ffi::EN_solveQ(project.ph) })?;
-        Ok(QualitySolver {
-            project,
-            current_time: 0,
-            needs_close: false,
-            state: PhantomData,
-        })
+        check_error(unsafe { ffi::EN_solveQ(project.ph) })
     }
 
     /// Opens and initializes the quality solver for step-by-step simulation.
     ///
-    /// After calling this method, use [`run()`](QualitySolver::run) to start
-    /// the simulation loop.
-    ///
-    /// **Prerequisite:** Hydraulic analysis must be completed first.
+    /// Calls `EN_openQ` + `EN_initQ`.
     ///
     /// # Parameters
     ///
-    /// - `option`: Controls whether quality results are saved to the output file
-    pub fn init(self, option: InitHydOption) -> Result<QualitySolver<'a, Initialized>> {
+    /// - `option`: Controls whether quality results are saved.
+    pub fn init_q(self, option: InitHydOption) -> Result<Solver<'a, QInitialized>> {
         let project = self.project;
         std::mem::forget(self);
 
         check_error(unsafe { ffi::EN_openQ(project.ph) })?;
         check_error(unsafe { ffi::EN_initQ(project.ph, option as i32) })?;
-        Ok(QualitySolver {
+        Ok(Solver {
             project,
             current_time: 0,
-            needs_close: true,
+            needs_close_h: false,
+            needs_close_q: true,
             state: PhantomData,
         })
     }
 }
 
-impl<'a> QualitySolver<'a, Initialized> {
-    /// Runs the quality simulation for the first time step, transitioning to Running state.
-    pub fn run(self) -> Result<QualitySolver<'a, Running>> {
+// =============================================================================
+// HydFileLoaded → solve_q, init_q → QInitialized
+// =============================================================================
+
+impl<'a> Solver<'a, HydFileLoaded> {
+    /// Runs a complete water quality simulation using the loaded hydraulic file.
+    ///
+    /// Calls `EN_solveQ`.
+    pub fn solve_q(self) -> Result<()> {
         let project = self.project;
+        std::mem::forget(self);
+
+        check_error(unsafe { ffi::EN_solveQ(project.ph) })
+    }
+
+    /// Opens and initializes the quality solver for step-by-step simulation.
+    ///
+    /// Calls `EN_openQ` + `EN_initQ`.
+    ///
+    /// # Parameters
+    ///
+    /// - `option`: Controls whether quality results are saved.
+    pub fn init_q(self, option: InitHydOption) -> Result<Solver<'a, QInitialized>> {
+        let project = self.project;
+        std::mem::forget(self);
+
+        check_error(unsafe { ffi::EN_openQ(project.ph) })?;
+        check_error(unsafe { ffi::EN_initQ(project.ph, option as i32) })?;
+        Ok(Solver {
+            project,
+            current_time: 0,
+            needs_close_h: false,
+            needs_close_q: true,
+            state: PhantomData,
+        })
+    }
+}
+
+// =============================================================================
+// QInitialized → QRunning
+// =============================================================================
+
+impl<'a> Solver<'a, QInitialized> {
+    /// Runs the first quality time step, transitioning to [`QRunning`].
+    ///
+    /// Calls `EN_runQ`.
+    pub fn run_q(self) -> Result<Solver<'a, QRunning>> {
+        let project = self.project;
+        let needs_close_q = self.needs_close_q;
         std::mem::forget(self);
 
         let mut current_time: std::os::raw::c_long = 0;
         check_error(unsafe { ffi::EN_runQ(project.ph, &mut current_time) })?;
-        Ok(QualitySolver {
+        Ok(Solver {
             project,
             current_time: current_time as i64,
-            needs_close: true,
+            needs_close_h: false,
+            needs_close_q,
             state: PhantomData,
         })
     }
 }
 
-impl<'a> QualitySolver<'a, Running> {
+// =============================================================================
+// QRunning → step_q, next_q, close_q
+// =============================================================================
+
+impl<'a> Solver<'a, QRunning> {
     /// Advances the simulation by one water quality time step.
     ///
-    /// This method uses `EN_stepQ` which advances by the water quality time step
-    /// (typically smaller than the hydraulic time step for accuracy).
-    /// The `next_step` field in [`StepResult::Continue`] contains the time remaining
-    /// in the simulation.
-    pub fn step(&mut self) -> Result<StepResult> {
+    /// Calls `EN_stepQ`, then `EN_runQ` to retrieve the current time.
+    ///
+    /// # Returns
+    ///
+    /// - [`StepResult::Continue`]: more steps remain; `next_step` is the time
+    ///   remaining in the simulation.
+    /// - [`StepResult::Done`]: simulation complete; call [`close_q`](Self::close_q).
+    pub fn step_q(&mut self) -> Result<StepResult> {
         let mut time_left: std::os::raw::c_long = 0;
         check_error(unsafe { ffi::EN_stepQ(self.project.ph, &mut time_left) })?;
 
-        // EN_runQ retrieves the current simulation time without advancing
         let mut current_time: std::os::raw::c_long = 0;
         check_error(unsafe { ffi::EN_runQ(self.project.ph, &mut current_time) })?;
         self.current_time = current_time as i64;
@@ -488,10 +639,14 @@ impl<'a> QualitySolver<'a, Running> {
 
     /// Advances the simulation to the next reporting time step.
     ///
-    /// This method uses `EN_nextQ` which advances to the next time when
-    /// results should be reported (typically at hydraulic time step intervals).
+    /// Calls `EN_nextQ`. If more steps remain, also calls `EN_runQ`.
+    ///
+    /// # Returns
+    ///
+    /// - [`StepResult::Continue`]: more steps remain; `next_step` is the time step advanced.
+    /// - [`StepResult::Done`]: simulation complete; call [`close_q`](Self::close_q).
     #[allow(clippy::should_implement_trait)]
-    pub fn next(&mut self) -> Result<StepResult> {
+    pub fn next_q(&mut self) -> Result<StepResult> {
         let mut time_step: std::os::raw::c_long = 0;
         check_error(unsafe { ffi::EN_nextQ(self.project.ph, &mut time_step) })?;
 
@@ -503,7 +658,6 @@ impl<'a> QualitySolver<'a, Running> {
             let mut current_time: std::os::raw::c_long = 0;
             check_error(unsafe { ffi::EN_runQ(self.project.ph, &mut current_time) })?;
             self.current_time = current_time as i64;
-
             Ok(StepResult::Continue {
                 current_time: current_time as i64,
                 next_step: time_step as i64,
@@ -513,29 +667,12 @@ impl<'a> QualitySolver<'a, Running> {
 
     /// Closes the quality solver and frees resources.
     ///
-    /// This consumes the solver and explicitly closes the quality engine.
-    /// If not called, the Drop implementation will close it automatically.
-    pub fn close(self) -> Result<()> {
+    /// Calls `EN_closeQ`.
+    pub fn close_q(self) -> Result<()> {
         let project = self.project;
         std::mem::forget(self);
 
         check_error(unsafe { ffi::EN_closeQ(project.ph) })
-    }
-}
-
-/// Safety net — if someone drops the solver without calling close(),
-/// make sure the C engine cleans up.
-///
-/// The `needs_close` field tracks whether EN_closeQ should be called:
-/// - `false` for Closed (never opened) and Solved (EN_solveQ closes internally)
-/// - `true` for Initialized and Running (step-by-step path)
-impl<'a, State> Drop for QualitySolver<'a, State> {
-    fn drop(&mut self) {
-        if self.needs_close {
-            unsafe {
-                ffi::EN_closeQ(self.project.ph);
-            }
-        }
     }
 }
 
@@ -550,39 +687,38 @@ mod tests {
     use rstest::rstest;
 
     // -------------------------------------------------------------------------
-    // Hydraulic Solver Tests
+    // Hydraulic solver tests
     // -------------------------------------------------------------------------
 
     #[rstest]
     fn test_hydraulic_solver_one_shot(ph: EPANET) {
-        let solver = ph.hydraulic_solver();
-        let solved = solver.solve().expect("Failed to solve hydraulics");
-        solved.save().expect("Failed to save hydraulics");
+        let solver = ph.solver().solve_h().expect("Failed to solve hydraulics");
+        solver.save().expect("Failed to save hydraulics");
     }
 
     #[rstest]
     fn test_hydraulic_solver_step_by_step(ph: EPANET) {
-        let solver = ph.hydraulic_solver();
-        let initialized = solver
-            .init(InitHydOption::Save)
-            .expect("Failed to init hydraulics");
-        let mut running = initialized.run().expect("Failed to run hydraulics");
+        let mut solver = ph
+            .solver()
+            .init_h(InitHydOption::Save)
+            .expect("Failed to init hydraulics")
+            .run_h()
+            .expect("Failed to run first hydraulic step");
 
         let mut steps = 0;
         loop {
             steps += 1;
-
-            match running.next().expect("Failed to step hydraulics") {
+            match solver.next_h().expect("Failed to step hydraulics") {
                 StepResult::Continue {
                     current_time,
                     next_step,
                 } => {
-                    assert!(current_time >= 0, "Time should be non-negative");
-                    assert!(next_step > 0, "Next step should be positive while continuing");
+                    assert!(current_time >= 0);
+                    assert!(next_step > 0);
                 }
                 StepResult::Done { current_time } => {
-                    assert!(current_time >= 0, "Final time should be non-negative");
-                    running.close().expect("Failed to close hydraulics");
+                    assert!(current_time >= 0);
+                    solver.close_h().expect("Failed to close hydraulics");
                     break;
                 }
             }
@@ -591,66 +727,60 @@ mod tests {
         assert!(steps > 1, "Should have taken multiple steps");
     }
 
+    #[rstest]
+    fn test_hydraulic_drop_safety(ph: EPANET) {
+        // Drop HRunning without calling close_h — Drop impl should clean up.
+        let solver = ph
+            .solver()
+            .init_h(InitHydOption::NoSave)
+            .expect("Failed to init")
+            .run_h()
+            .expect("Failed to run");
+        drop(solver);
+        // No crash = Drop worked correctly.
+    }
+
     // -------------------------------------------------------------------------
-    // Quality Solver Tests
+    // Quality solver tests
     // -------------------------------------------------------------------------
 
     #[rstest]
     fn test_quality_solver_one_shot(ph: EPANET) {
-        // Solve hydraulics first
-        ph.hydraulic_solver()
-            .solve()
-            .expect("Failed to solve hydraulics")
-            .save()
-            .expect("Failed to save hydraulics");
-
-        // One-shot quality solve — no close() needed
-        let solved = ph.quality_solver().solve().expect("Failed to solve quality");
-
-        // We can still access the project via the Solver trait
-        let _project = Solver::project(&solved);
+        let hyd = ph.solver().solve_h().expect("Failed to solve hydraulics");
+        hyd.save().expect("Failed to save hydraulics");
+        hyd.solve_q().expect("Failed to solve quality");
     }
 
     #[rstest]
     fn test_quality_solver_step_by_step(ph: EPANET) {
-        // Solve hydraulics first
-        ph.hydraulic_solver()
-            .solve()
+        let mut solver = ph
+            .solver()
+            .solve_h()
             .expect("Failed to solve hydraulics")
-            .save()
-            .expect("Failed to save hydraulics");
-
-        // Step-by-step quality solve using step()
-        let mut running = ph
-            .quality_solver()
-            .init(InitHydOption::Save)
+            .init_q(InitHydOption::Save)
             .expect("Failed to init quality")
-            .run()
+            .run_q()
             .expect("Failed to run quality");
 
         let mut steps = 0;
         loop {
             steps += 1;
 
-            // Access project via Solver trait to verify we can read results
-            let _project = Solver::project(&running);
+            // Verify project is accessible at each step.
+            let _project = solver.project();
 
-            match running.step().expect("Failed to step quality") {
-                StepResult::Continue {
-                    current_time: _,
-                    next_step,
-                } => {
-                    assert!(next_step > 0, "Time left should be positive while continuing");
+            match solver.step_q().expect("Failed to step quality") {
+                StepResult::Continue { next_step, .. } => {
+                    assert!(next_step > 0);
                 }
                 StepResult::Done { .. } => {
-                    running.close().expect("Failed to close quality");
+                    solver.close_q().expect("Failed to close quality");
                     break;
                 }
             }
 
-            // Safety limit to prevent infinite loops in tests
             if steps > 10000 {
-                panic!("Too many steps, possible infinite loop");
+                panic!("Too many steps — possible infinite loop");
             }
         }
 
@@ -659,41 +789,30 @@ mod tests {
 
     #[rstest]
     fn test_quality_solver_next(ph: EPANET) {
-        // Solve hydraulics first
-        ph.hydraulic_solver()
-            .solve()
+        let mut solver = ph
+            .solver()
+            .solve_h()
             .expect("Failed to solve hydraulics")
-            .save()
-            .expect("Failed to save hydraulics");
-
-        // Step-by-step quality solve using next()
-        let mut running = ph
-            .quality_solver()
-            .init(InitHydOption::NoSave)
+            .init_q(InitHydOption::NoSave)
             .expect("Failed to init quality")
-            .run()
+            .run_q()
             .expect("Failed to run quality");
 
         let mut steps = 0;
         loop {
             steps += 1;
-
-            match running.next().expect("Failed to next quality") {
-                StepResult::Continue {
-                    current_time: _,
-                    next_step,
-                } => {
-                    assert!(next_step > 0, "Time step should be positive while continuing");
+            match solver.next_q().expect("Failed to next quality") {
+                StepResult::Continue { next_step, .. } => {
+                    assert!(next_step > 0);
                 }
                 StepResult::Done { .. } => {
-                    running.close().expect("Failed to close quality");
+                    solver.close_q().expect("Failed to close quality");
                     break;
                 }
             }
 
-            // Safety limit
             if steps > 1000 {
-                panic!("Too many steps, possible infinite loop");
+                panic!("Too many steps — possible infinite loop");
             }
         }
 
@@ -702,24 +821,133 @@ mod tests {
 
     #[rstest]
     fn test_quality_solver_drop_safety(ph: EPANET) {
-        // Solve hydraulics first
-        ph.hydraulic_solver()
-            .solve()
+        let solver = ph
+            .solver()
+            .solve_h()
             .expect("Failed to solve hydraulics")
-            .save()
-            .expect("Failed to save hydraulics");
-
-        // Create solver but don't close it - should be cleaned up by Drop
-        let running = ph
-            .quality_solver()
-            .init(InitHydOption::NoSave)
+            .init_q(InitHydOption::NoSave)
             .expect("Failed to init quality")
-            .run()
+            .run_q()
             .expect("Failed to run quality");
 
-        // Just drop it without calling close() explicitly
-        drop(running);
+        // Drop without calling close_q — Drop impl should call EN_closeQ.
+        drop(solver);
+        // No crash = Drop worked correctly.
+    }
 
-        // If we get here without crashing, Drop worked correctly
+    // -------------------------------------------------------------------------
+    // Simultaneous H+Q test
+    // -------------------------------------------------------------------------
+
+    #[rstest]
+    fn test_simultaneous_hq(ph: EPANET) {
+        let mut solver = ph
+            .solver()
+            .init_h(InitHydOption::NoSave)
+            .expect("Failed to init hydraulics")
+            .init_q(InitHydOption::NoSave)
+            .expect("Failed to init quality")
+            .run()
+            .expect("Failed to run first H+Q step");
+
+        let mut steps = 0;
+        loop {
+            steps += 1;
+            match solver.next().expect("Failed to step H+Q") {
+                StepResult::Continue {
+                    current_time,
+                    next_step,
+                } => {
+                    assert!(current_time >= 0);
+                    assert!(next_step > 0);
+                }
+                StepResult::Done { .. } => {
+                    solver.close().expect("Failed to close H+Q");
+                    break;
+                }
+            }
+
+            if steps > 10000 {
+                panic!("Too many steps — possible infinite loop");
+            }
+        }
+
+        assert!(steps > 1, "Should have taken multiple steps");
+    }
+
+    // -------------------------------------------------------------------------
+    // Hydraulics file tests
+    // -------------------------------------------------------------------------
+
+    #[rstest]
+    fn test_use_hyd_file(ph: EPANET) {
+        let hyd_path = {
+            let dir = std::env::temp_dir();
+            dir.join("epanet_test_solver.hyd")
+                .to_string_lossy()
+                .into_owned()
+        };
+
+        // Solve hydraulics and save to file.
+        {
+            let hyd = ph.solver().solve_h().expect("Failed to solve hydraulics");
+            hyd.save_hyd_file(&hyd_path)
+                .expect("Failed to save hydraulics file");
+        } // hyd dropped here, releasing borrow of ph
+
+        // Load file and run quality.
+        ph.solver()
+            .use_hyd_file(&hyd_path)
+            .expect("Failed to load hydraulics file")
+            .solve_q()
+            .expect("Failed to solve quality from file");
+
+        // Clean up.
+        drop(ph);
+        let _ = std::fs::remove_file(&hyd_path);
+    }
+
+    #[rstest]
+    fn test_close_h_then_quality(ph: EPANET) {
+        // Step-by-step hydraulics, then step-by-step quality.
+        let mut hyd = ph
+            .solver()
+            .init_h(InitHydOption::Save)
+            .expect("Failed to init hydraulics")
+            .run_h()
+            .expect("Failed to run hydraulics");
+
+        loop {
+            match hyd.next_h().expect("Failed to step hydraulics") {
+                StepResult::Continue { .. } => {}
+                StepResult::Done { .. } => break,
+            }
+        }
+
+        let mut qual = hyd
+            .close_h()
+            .expect("Failed to close hydraulics")
+            .init_q(InitHydOption::NoSave)
+            .expect("Failed to init quality")
+            .run_q()
+            .expect("Failed to run quality");
+
+        let mut steps = 0;
+        loop {
+            steps += 1;
+            match qual.step_q().expect("Failed to step quality") {
+                StepResult::Continue { .. } => {}
+                StepResult::Done { .. } => {
+                    qual.close_q().expect("Failed to close quality");
+                    break;
+                }
+            }
+
+            if steps > 10000 {
+                panic!("Too many steps — possible infinite loop");
+            }
+        }
+
+        assert!(steps > 1, "Should have taken multiple steps");
     }
 }

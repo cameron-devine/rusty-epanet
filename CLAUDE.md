@@ -1,6 +1,6 @@
 # CLAUDE.md - rusty-epanet
 
-Safe Rust wrapper for the [EPANET 2.2](https://github.com/USEPA/EPANET) C library for water distribution network modeling and simulation.
+Safe Rust wrapper for the [EPANET 2.3](https://github.com/OpenWaterAnalytics/EPANET) C library for water distribution network modeling and simulation.
 
 ## Project Status
 

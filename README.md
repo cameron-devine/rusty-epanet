@@ -1,8 +1,8 @@
 # Rusty EPANET
 
-> **Status: Early Development (v0.1.0)**
+> **Status: Early Development (v0.2.0)**
 
-Safe Rust bindings to the [EPANET 2.2](https://github.com/USEPA/EPANET) C library for water distribution network modeling and simulation. The EPANET source is included as a git submodule, compiled via CMake at build time, and exposed through `bindgen`-generated FFI bindings. A high-level `EPANET` struct wraps the raw C API with automatic resource cleanup, and domain structs (`Node`, `Link`, `Pattern`, etc.) provide an RAII layer for working with model objects.
+Safe Rust bindings to the [EPANET 2.3](https://github.com/OpenWaterAnalytics/EPANET) C library for water distribution network modeling and simulation. The EPANET source is included as a git submodule, compiled via CMake at build time, and exposed through `bindgen`-generated FFI bindings. A high-level `EPANET` struct wraps the raw C API with automatic resource cleanup, and domain structs (`Node`, `Link`, `Pattern`, etc.) provide an RAII layer for working with model objects.
 
 ## Prerequisites
 
@@ -222,9 +222,9 @@ let rules = ph.rules()?;
 
 ## Solvers
 
-### Hydraulic Analysis
+The `EPANET::solver()` entry point returns a `Solver<HClosed>` whose type parameter encodes the current simulation state. Invalid call sequences (e.g. stepping before initializing) are caught by the Rust compiler.
 
-The hydraulic solver uses a typestate pattern to enforce correct call ordering at compile time. Invalid transitions (e.g., calling `run()` before `init()`) are caught by the Rust compiler.
+### Hydraulic Analysis
 
 ```rust
 use epanet::types::analysis::{InitHydOption, StepResult};
@@ -232,23 +232,24 @@ use epanet::types::analysis::{InitHydOption, StepResult};
 let ph = EPANET::with_inp_file("net1.inp", "", "")?;
 
 // Option 1: One-shot solve
-ph.solve_h()?;
+let solver = ph.solver().solve_h()?;
+solver.save()?;
 
-// Option 2: Typestate solver for step-by-step control
-let solver = ph.hydraulic_solver()
-    .init(InitHydOption::Save)?
-    .run()?;
+// Option 2: Step-by-step
+let mut solver = ph.solver()
+    .init_h(InitHydOption::Save)?
+    .run_h()?;
 
 loop {
-    match solver.next()? {
+    match solver.next_h()? {
         StepResult::Continue { current_time, next_step } => {
-            // Read results mid-simulation
-            let pressure = ph.get_node_value(1, NodeProperty::Pressure)?;
+            // Read results mid-simulation via solver.project()
+            let pressure = solver.project().get_node_value(1, NodeProperty::Pressure)?;
             println!("t={}: pressure={:.2}", current_time, pressure);
         }
         StepResult::Done { current_time } => {
             println!("Simulation complete at t={}", current_time);
-            solver.close()?;
+            solver.close_h()?;
             break;
         }
     }
@@ -257,14 +258,42 @@ loop {
 
 ### Water Quality Analysis
 
-Follows the same pattern, but requires hydraulics to be solved first:
+Requires hydraulics to be solved first. Can be chained directly from a completed hydraulic solver:
 
 ```rust
-// Solve hydraulics first
-ph.hydraulic_solver().solve()?.save()?;
+// One-shot: solve hydraulics then quality
+let hyd = ph.solver().solve_h()?;
+hyd.save()?;
+hyd.solve_q()?;
 
-// Then quality
-ph.quality_solver().solve()?;
+// Step-by-step quality after one-shot hydraulics
+let mut qual = ph.solver()
+    .solve_h()?
+    .init_q(InitHydOption::Save)?
+    .run_q()?;
+
+loop {
+    match qual.step_q()? {
+        StepResult::Continue { .. } => {}
+        StepResult::Done { .. } => { qual.close_q()?; break; }
+    }
+}
+```
+
+### Simultaneous Hydraulic + Quality
+
+```rust
+let mut solver = ph.solver()
+    .init_h(InitHydOption::NoSave)?
+    .init_q(InitHydOption::NoSave)?
+    .run()?;
+
+loop {
+    match solver.next()? {
+        StepResult::Continue { .. } => {}
+        StepResult::Done { .. } => { solver.close()?; break; }
+    }
+}
 ```
 
 ## Callbacks
@@ -387,7 +416,7 @@ src/
   epanet_error.rs     # EPANETError, Result<T>, check_error()
   error_messages.rs   # Generated: error code -> &'static str
   types/              # Enums, domain structs, and type definitions
-    analysis.rs       # Typestate solvers (HydraulicSolver, QualitySolver)
+    analysis.rs       # Unified typestate Solver<S> (HClosed → HRunning → HydDone → QRunning …)
     node.rs           # Node struct, NodeKind enum, JunctionData/TankData/ReservoirData
     link.rs           # Link struct, LinkKind enum, PipeData/PumpData/ValveData
     control.rs        # Control struct, ControlType enum
@@ -434,5 +463,5 @@ tests/
 
 ## Additional Resources
 
-- [EPANET 2.2 Programmer's Toolkit](https://wateranalytics.org/EPANET/_toolkit_page.html)
+- [EPANET 2.3 Programmer's Toolkit](https://wateranalytics.org/EPANET/_toolkit_page.html)
 - [Using C Libraries in Rust](https://medium.com/dwelo-r-d/using-c-libraries-in-rust-13961948c72a)
