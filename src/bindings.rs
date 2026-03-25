@@ -1,9 +1,4 @@
-#![allow(non_upper_case_globals)]
-#![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
-#![allow(dead_code)] // To quiet warnings about unused constants in the generate code.
-
-include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+pub use epanet_sys::*;
 
 #[cfg(test)]
 mod tests {
@@ -25,13 +20,13 @@ mod tests {
             .into_owned()
     }
 
-    static DATA_PATH_NET1: &str = "./EPANET/example-networks/Net1.inp";
+    static DATA_PATH_NET1: &str = "src/impls/test_utils/net1.inp";
     static DATA_PATH_OUT: &str = "";
 
     #[test]
     fn test_project() {
         let mut error;
-        let mut ph: EN_Project = &mut Project { _unused: [] };
+        let mut ph: EN_Project = std::ptr::null_mut();
 
         unsafe {
             error = EN_createproject(&mut ph);
@@ -49,7 +44,7 @@ mod tests {
     #[test]
     fn test_nodes() {
         unsafe {
-            let mut ph: EN_Project = &mut Project { _unused: [] };
+            let mut ph: EN_Project = std::ptr::null_mut();
             let error = EN_createproject(&mut ph);
             assert_eq!(error, 0);
 
