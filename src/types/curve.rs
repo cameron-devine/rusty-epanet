@@ -1,3 +1,4 @@
+//! Curve types: [`Curve`] RAII struct and [`CurveType`] enum.
 use crate::{bindings::*, EPANET, epanet_error::*};
 use num_derive::FromPrimitive;
 

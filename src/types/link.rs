@@ -1,3 +1,4 @@
+//! Link domain types: [`Link`], [`LinkType`], [`LinkProperty`], and link data structs.
 use crate::bindings::*;
 use num_derive::FromPrimitive;
 use crate::EPANET;
@@ -98,34 +99,56 @@ pub struct Link<'a> {
     pub kind: LinkKind,
 }
 
+/// Type-specific data for a link, discriminated by link kind.
 pub enum LinkKind {
+    /// Pipe (one-way flow, no check valve).
     Pipe(PipeData),
-    CvPipe(PipeData),          // same fields, different hydraulic behavior
+    /// Pipe with check valve (flow restricted to one direction).
+    CvPipe(PipeData),
+    /// Pump link.
     Pump(PumpData),
+    /// Valve link (PRV, PSV, PBV, FCV, TCV, GPV, or PCV).
     Valve(ValveData),
 }
 
+/// Physical properties of a pipe or check-valve pipe.
 pub struct PipeData {
+    /// Pipe length (in project length units).
     pub length: f64,
+    /// Internal diameter (in project length units).
     pub diameter: f64,
+    /// Roughness coefficient (Hazen-Williams C or Darcy-Weisbach ε).
     pub roughness: f64,
+    /// Minor loss coefficient.
     pub minor_loss: f64,
 }
 
+/// Properties of a pump link.
 pub struct PumpData {
+    /// Pump curve type (constant HP, power function, or custom).
     pub pump_type: PumpType,
+    /// Constant power rating (kW or HP depending on flow units).
     pub power: f64,
+    /// Initial speed multiplier (1.0 = design speed).
     pub speed: f64,
+    /// Index of the head-vs-flow curve, if any.
     pub head_curve_index: Option<i32>,
+    /// Index of the efficiency-vs-flow curve, if any.
     pub efficiency_curve_index: Option<i32>,
+    /// Index of the energy price time pattern, if any.
     pub energy_pattern_index: Option<i32>,
+    /// Average energy price (cost per kWh).
     pub energy_cost: f64,
 }
 
+/// Properties of a valve link.
 pub struct ValveData {
+    /// Valve diameter (in project length units).
     pub diameter: f64,
-    pub setting: f64,           // meaning depends on valve_type
-    pub curve_index: Option<i32>, // GPV/PCV only
+    /// Valve setting (pressure for PRV/PSV/PBV, flow for FCV, loss coeff. for TCV/GPV/PCV).
+    pub setting: f64,
+    /// Head-loss or loss-coefficient curve index (GPV and PCV only).
+    pub curve_index: Option<i32>,
 }
 
 impl<'a> Link<'a> {
@@ -237,6 +260,7 @@ impl<'a> Link<'a> {
         })
     }
 
+    /// Returns the 1-based EPANET index of this link.
     pub fn index(&self) -> i32 { self.index }
 
     /// Push cached fields back to the C engine.
@@ -271,38 +295,56 @@ impl<'a> Link<'a> {
         }
     }
 
+    /// Deletes this link from the EPANET model, consuming the struct.
+    ///
+    /// `action_code` controls how conflicts (e.g. the link appears in a control) are handled.
     pub fn delete(self, action_code: ActionCodeType) -> Result<()> {
         self.project.delete_link(self.index, action_code)
     }
 
     // --- Live computed results (read from C engine, not cached) ---
 
+    /// Returns the current computed flow rate (positive = from-node to to-node).
+    ///
+    /// Only valid after a hydraulic solve.
     pub fn flow(&self) -> Result<f64> {
         self.project.get_link_value(self.index, LinkProperty::Flow)
     }
 
+    /// Returns the current computed flow velocity.
+    ///
+    /// Only valid after a hydraulic solve.
     pub fn velocity(&self) -> Result<f64> {
         self.project.get_link_value(self.index, LinkProperty::Velocity)
     }
 
+    /// Returns the current computed head loss across the link.
+    ///
+    /// Only valid after a hydraulic solve.
     pub fn head_loss(&self) -> Result<f64> {
         self.project.get_link_value(self.index, LinkProperty::HeadLoss)
     }
 
+    /// Returns the current computed water quality value for the link.
+    ///
+    /// Only valid after a water quality solve.
     pub fn quality(&self) -> Result<f64> {
         self.project.get_link_value(self.index, LinkProperty::LinkQual)
     }
 
     // --- Convenience type checks ---
 
+    /// Returns `true` if this link is a pipe or check-valve pipe.
     pub fn is_pipe(&self) -> bool {
         matches!(self.kind, LinkKind::Pipe(_) | LinkKind::CvPipe(_))
     }
 
+    /// Returns `true` if this link is a pump.
     pub fn is_pump(&self) -> bool {
         matches!(self.kind, LinkKind::Pump(_))
     }
 
+    /// Returns `true` if this link is a valve.
     pub fn is_valve(&self) -> bool {
         matches!(self.kind, LinkKind::Valve(_))
     }
@@ -315,6 +357,7 @@ impl<'a> Link<'a> {
         }
     }
 
+    /// Returns a mutable reference to the pipe data, or `None` if this is not a pipe.
     pub fn as_pipe_mut(&mut self) -> Option<&mut PipeData> {
         match &mut self.kind {
             LinkKind::Pipe(d) | LinkKind::CvPipe(d) => Some(d),
@@ -322,18 +365,22 @@ impl<'a> Link<'a> {
         }
     }
 
+    /// Returns a reference to the pump data, or `None` if this is not a pump.
     pub fn as_pump(&self) -> Option<&PumpData> {
         match &self.kind { LinkKind::Pump(d) => Some(d), _ => None }
     }
 
+    /// Returns a mutable reference to the pump data, or `None` if this is not a pump.
     pub fn as_pump_mut(&mut self) -> Option<&mut PumpData> {
         match &mut self.kind { LinkKind::Pump(d) => Some(d), _ => None }
     }
 
+    /// Returns a reference to the valve data, or `None` if this is not a valve.
     pub fn as_valve(&self) -> Option<&ValveData> {
         match &self.kind { LinkKind::Valve(d) => Some(d), _ => None }
     }
 
+    /// Returns a mutable reference to the valve data, or `None` if this is not a valve.
     pub fn as_valve_mut(&mut self) -> Option<&mut ValveData> {
         match &mut self.kind { LinkKind::Valve(d) => Some(d), _ => None }
     }

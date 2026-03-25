@@ -1,3 +1,4 @@
+//! Time pattern types: [`Pattern`] RAII struct.
 use crate::{epanet_error::*, EPANET};
 
 /// A struct representing a time pattern in an EPANET project.

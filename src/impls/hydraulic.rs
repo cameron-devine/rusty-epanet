@@ -33,12 +33,7 @@ impl EPANET {
     /// # See Also
     /// - EN_openH (EPANET C API)
     pub fn open_h(&self) -> Result<()> {
-        unsafe {
-            match ffi::EN_openH(self.ph) {
-                0 => Ok(()),
-                x => Err(EPANETError::from(x)),
-            }
-        }
+        check_error(unsafe { ffi::EN_openH(self.ph) })
     }
 
     /// Initializes the network prior to running a hydraulic analysis.
@@ -69,12 +64,7 @@ impl EPANET {
     /// - EN_initH (EPANET C API)
     /// - [`InitHydOption`] for initialization options.
     pub fn init_h(&self, init_flag: InitHydOption) -> Result<()> {
-        unsafe {
-            match ffi::EN_initH(self.ph, init_flag as i32) {
-                0 => Ok(()),
-                x => Err(EPANETError::from(x)),
-            }
-        }
+        check_error(unsafe { ffi::EN_initH(self.ph, init_flag as i32) })
     }
 
     /// Uses a previously saved binary hydraulics file to supply the project's hydraulics.
@@ -107,12 +97,7 @@ impl EPANET {
         use std::ffi::CString;
 
         let c_file_name = CString::new(file_name).expect("file_name contains null bytes");
-        unsafe {
-            match ffi::EN_usehydfile(self.ph, c_file_name.as_ptr()) {
-                0 => Ok(()),
-                x => Err(EPANETError::from(x)),
-            }
-        }
+        check_error(unsafe { ffi::EN_usehydfile(self.ph, c_file_name.as_ptr()) })
     }
 
     /// Runs a complete hydraulic analysis for the EPANET project.
@@ -137,13 +122,25 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_solveH (EPANET C API)
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use epanet::EPANET;
+    /// use epanet::types::node::NodeProperty;
+    ///
+    /// let ph = EPANET::with_inp_file("network.inp", "report.rpt", "")?;
+    /// ph.solve_h()?;
+    ///
+    /// let count = ph.get_count(epanet::types::CountType::NodeCount)?;
+    /// for i in 1..=count {
+    ///     let pressure = ph.get_node_value(i, NodeProperty::Pressure)?;
+    ///     println!("Node {i}: {pressure:.2}");
+    /// }
+    /// # Ok::<(), epanet::epanet_error::EPANETError>(())
+    /// ```
     pub fn solve_h(&self) -> Result<()> {
-        unsafe {
-            match ffi::EN_solveH(self.ph) {
-                0 => Ok(()),
-                x => Err(EPANETError::from(x)),
-            }
-        }
+        check_error(unsafe { ffi::EN_solveH(self.ph) })
     }
 
     /// Computes a hydraulic solution for the current point in time.
@@ -170,12 +167,9 @@ impl EPANET {
     /// - EN_runH (EPANET C API)
     pub fn run_h(&self) -> Result<u64> {
         let mut out_current_time: c_long = 0;
-        unsafe {
-            match ffi::EN_runH(self.ph, &mut out_current_time) {
-                0 => Ok(out_current_time as u64),
-                x => Err(EPANETError::from(x)),
-            }
-        }
+        let code = unsafe { ffi::EN_runH(self.ph, &mut out_current_time) };
+        check_error(code)?;
+        Ok(out_current_time as u64)
     }
 
     /// Advances the simulation to the next hydraulic event.
@@ -202,12 +196,9 @@ impl EPANET {
     /// - EN_nextH (EPANET C API)
     pub fn next_h(&self) -> Result<u64> {
         let mut out_next_time: c_long = 0;
-        unsafe {
-            match ffi::EN_nextH(self.ph, &mut out_next_time) {
-                0 => Ok(out_next_time as u64),
-                x => Err(EPANETError::from(x)),
-            }
-        }
+        let code = unsafe { ffi::EN_nextH(self.ph, &mut out_next_time) };
+        check_error(code)?;
+        Ok(out_next_time as u64)
     }
 
     /// Transfers hydraulic results from the temporary hydraulics file to the binary output file.
@@ -233,12 +224,7 @@ impl EPANET {
     /// # See Also
     /// - EN_saveH (EPANET C API)
     pub fn save_h(&self) -> Result<()> {
-        unsafe {
-            match ffi::EN_saveH(self.ph) {
-                0 => Ok(()),
-                x => Err(EPANETError::from(x)),
-            }
-        }
+        check_error(unsafe { ffi::EN_saveH(self.ph) })
     }
 
     /// Saves the current hydraulics results to a binary file.
@@ -274,12 +260,7 @@ impl EPANET {
 
         // todo: Should this be a std::path::PathBuf?
         let c_file_name = CString::new(file_name).expect("file_name contains null bytes");
-        unsafe {
-            match ffi::EN_savehydfile(self.ph, c_file_name.as_ptr()) {
-                0 => Ok(()),
-                x => Err(EPANETError::from(x)),
-            }
-        }
+        check_error(unsafe { ffi::EN_savehydfile(self.ph, c_file_name.as_ptr()) })
     }
 
     /// Closes the hydraulic solver and frees all allocated memory.
@@ -305,12 +286,7 @@ impl EPANET {
     /// # See Also
     /// - EN_closeH (EPANET C API)
     pub fn close_h(&self) -> Result<()> {
-        unsafe {
-            match ffi::EN_closeH(self.ph) {
-                0 => Ok(()),
-                x => Err(EPANETError::from(x)),
-            }
-        }
+        check_error(unsafe { ffi::EN_closeH(self.ph) })
     }
 }
 

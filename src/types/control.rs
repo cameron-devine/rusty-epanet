@@ -1,3 +1,4 @@
+//! Simple control types: [`Control`] RAII struct and [`ControlType`] enum.
 use crate::{
     bindings::{
         EN_ControlType_EN_HILEVEL, EN_ControlType_EN_LOWLEVEL, EN_ControlType_EN_TIMEOFDAY,

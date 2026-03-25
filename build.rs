@@ -78,7 +78,7 @@ fn main() {
 
     // Generate error messages
     let input_path = Path::new("EPANET/src/errors.dat");
-    let output_path = Path::new("src/error_messages.rs");
+    let error_messages_path = out_path.join("error_messages.rs");
 
     let input = File::open(input_path).expect("Failed to open errors.dat");
     let reader = BufReader::new(input);
@@ -87,7 +87,7 @@ fn main() {
         .write(true)
         .create(true)
         .truncate(true)
-        .open(output_path)
+        .open(&error_messages_path)
         .expect("Failed to create error_messages.rs");
 
     writeln!(

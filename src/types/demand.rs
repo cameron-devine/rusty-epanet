@@ -1,3 +1,4 @@
+//! Demand types: [`Demand`] RAII struct, [`DemandModel`] enum, and [`DemandModelInfo`].
 use crate::bindings::*;
 use crate::{epanet_error::*, EPANET};
 use num_derive::FromPrimitive;

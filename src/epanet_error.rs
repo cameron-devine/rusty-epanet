@@ -12,9 +12,9 @@ pub type Result<T> = std::result::Result<T, EPANETError>;
 /// context string that provides additional information about the error's origin or usage.
 ///
 /// # Fields
-/// * `_code` - The numeric error code returned by the EPANET library.
-/// * `_message` - A human-readable description of the error associated with the error code.
-/// * `_context` - Optional additional context about the error, such as the operation or parameters
+/// * `code` - The numeric error code returned by the EPANET library.
+/// * `message` - A human-readable description of the error associated with the error code.
+/// * `context` - Optional additional context about the error, such as the operation or parameters
 ///   that caused it.
 #[derive(Debug, Clone)]
 pub struct EPANETError {
@@ -41,6 +41,11 @@ impl PartialEq for EPANETError {
 impl Error for EPANETError {}
 
 impl EPANETError {
+    /// Returns the human-readable message for this error code.
+    pub fn message(&self) -> &str {
+        self.message
+    }
+
     /// Adds context to the `EPANETError`, returning a new error with the context included.
     ///
     /// # Arguments
@@ -48,6 +53,20 @@ impl EPANETError {
     pub fn with_context(mut self, context: impl Into<String>) -> Self {
         self.context = Some(context.into());
         self
+    }
+
+    /// Returns `true` if this is a warning (code 1–99).
+    ///
+    /// EPANET uses codes 1–99 for non-fatal warnings that allow execution to continue.
+    pub fn is_warning(&self) -> bool {
+        (1..100).contains(&self.code)
+    }
+
+    /// Returns `true` if this is a fatal error (code ≥ 100).
+    ///
+    /// EPANET uses codes 100 and above for errors that prevent further execution.
+    pub fn is_error(&self) -> bool {
+        self.code >= 100
     }
 }
 

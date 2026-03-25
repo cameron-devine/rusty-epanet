@@ -1,3 +1,5 @@
+//! Rule-based control types: [`Rule`] RAII struct, [`Premise`], [`ActionClause`],
+//! and rule clause enumerations.
 use crate::bindings::*;
 use crate::EPANET;
 use num_derive::FromPrimitive;

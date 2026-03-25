@@ -160,7 +160,7 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 
 - [ ] Distinguish warnings (codes 1-99) from errors (codes >= 100) in `EPANETError`
 - [ ] Consider `EPANETWarning` type or `check_error` variant that allows warnings through
-- [ ] Add `EPANETError::is_warning()` / `is_error()` helpers
+- [x] Add `EPANETError::is_warning()` / `is_error()` helpers
 - [x] Standardize error checking pattern: some wrappers use `check_error`/`check_error_with_context`, others use manual `if result == 0` / `match` blocks - pick one and be consistent
 
 ## Testing
@@ -179,17 +179,17 @@ Structs are **views** into the C engine state, not owners of data. Use enum-base
 - [x] Replace `enum_primitive` (unmaintained, last release 2016) with `num_derive`/`num_traits` or `strum` (already a dev-dep)
 - [x] Add `#[must_use]` to Result-returning methods
 - [x] Add `clippy` configuration and address any warnings
-- [ ] Consider `thiserror` for `EPANETError` derive instead of manual `Display`/`Error` impls
+- [x] Consider `thiserror` for `EPANETError` derive instead of manual `Display`/`Error` impls
 - [x] Add `#[non_exhaustive]` to public enums for future compatibility
 - [x] Audit `Send + Sync` safety: EPANET C library uses global state in some configurations
 
 ## Documentation
 
-- [ ] Add crate-level docs in `lib.rs` with usage examples
-- [ ] Add module-level docs for `types/` and `impls/`
-- [ ] Ensure all public methods have doc comments (link.rs methods are mostly undocumented)
-- [ ] Add `# Examples` sections to frequently-used methods
-- [ ] Consider `doc = include_str!("../README.md")` for crate docs
+- [x] Add crate-level docs in `lib.rs` with usage examples
+- [x] Add module-level docs for `types/` and `impls/`
+- [x] Ensure all public methods have doc comments (link.rs methods are mostly undocumented)
+- [x] Add `# Examples` sections to frequently-used methods
+- [x] Consider `doc = include_str!("../README.md")` for crate docs — won't do: README covers install/build/linking which isn't appropriate for API docs; crate-level docs in lib.rs serve this purpose
 
 ## Build / CI
 
