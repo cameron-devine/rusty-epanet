@@ -1,3 +1,26 @@
+//! Type definitions for EPANET network elements, enumerations, and domain objects.
+//!
+//! Types are organized into submodules by domain. RAII domain structs
+//! ([`Control`], [`Curve`], [`Demand`], [`Pattern`], [`Rule`]) hold a reference
+//! to their parent [`EPANET`](crate::EPANET) project and expose `.update()` /
+//! `.delete()` methods for syncing changes back to the C engine.
+//!
+//! | Submodule | Key types |
+//! |---|---|
+//! | [`analysis`] | [`Solver<S>`](analysis::Solver) typestate solver, [`InitHydOption`](analysis::InitHydOption) |
+//! | [`node`] | [`Node`](node::Node), [`NodeType`](node::NodeType), [`NodeProperty`](node::NodeProperty) |
+//! | [`link`] | [`Link`](link::Link), [`LinkType`](link::LinkType), [`LinkProperty`](link::LinkProperty) |
+//! | [`control`] | [`Control`](control::Control), [`ControlType`](control::ControlType) |
+//! | [`curve`] | [`Curve`](curve::Curve), [`CurveType`](curve::CurveType) |
+//! | [`demand`] | [`Demand`](demand::Demand), [`DemandModel`](demand::DemandModel) |
+//! | [`pattern`] | [`Pattern`](pattern::Pattern) |
+//! | [`rule`] | [`Rule`](rule::Rule), [`Premise`](rule::Premise), [`ActionClause`](rule::ActionClause) |
+//! | [`options`] | [`FlowUnits`](options::FlowUnits), [`HeadLossType`](options::HeadLossType), [`TimeParameter`](options::TimeParameter), [`Option`](options::Option) |
+//! | [`report`] | [`ReportCallback`](report::ReportCallback) type alias and trampoline |
+//!
+//! Common types re-exported at this level: [`ObjectType`], [`CountType`], [`ActionCodeType`],
+//! [`Control`], [`Curve`], [`Demand`], [`Pattern`], [`Rule`], [`ReportCallback`].
+
 pub mod analysis;
 pub mod control;
 pub mod curve;

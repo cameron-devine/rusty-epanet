@@ -1,6 +1,6 @@
 # Rusty EPANET
 
-> **Status: Early Development (v0.2.0)**
+> **Status: Early Development (v0.2.1)**
 
 Safe Rust bindings to the [EPANET 2.3](https://github.com/OpenWaterAnalytics/EPANET) C library for water distribution network modeling and simulation. The EPANET source is included as a git submodule, compiled via CMake at build time, and exposed through `bindgen`-generated FFI bindings. A high-level `EPANET` struct wraps the raw C API with automatic resource cleanup, and domain structs (`Node`, `Link`, `Pattern`, etc.) provide an RAII layer for working with model objects.
 

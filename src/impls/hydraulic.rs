@@ -122,6 +122,23 @@ impl EPANET {
     ///
     /// # See Also
     /// - EN_solveH (EPANET C API)
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use epanet::EPANET;
+    /// use epanet::types::node::NodeProperty;
+    ///
+    /// let ph = EPANET::with_inp_file("network.inp", "report.rpt", "")?;
+    /// ph.solve_h()?;
+    ///
+    /// let count = ph.get_count(epanet::types::CountType::NodeCount)?;
+    /// for i in 1..=count {
+    ///     let pressure = ph.get_node_value(i, NodeProperty::Pressure)?;
+    ///     println!("Node {i}: {pressure:.2}");
+    /// }
+    /// # Ok::<(), epanet::epanet_error::EPANETError>(())
+    /// ```
     pub fn solve_h(&self) -> Result<()> {
         check_error(unsafe { ffi::EN_solveH(self.ph) })
     }

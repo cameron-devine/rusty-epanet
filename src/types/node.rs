@@ -1,3 +1,4 @@
+//! Node domain types: [`Node`], [`NodeType`], [`NodeProperty`], and node data structs.
 use crate::bindings::*;
 use crate::epanet_error::*;
 use crate::EPANET;

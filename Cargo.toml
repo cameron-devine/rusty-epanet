@@ -1,6 +1,6 @@
 [package]
 name = "epanet"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Safe Rust bindings to the EPANET 2.3 water distribution network simulator"
 license = "MIT"

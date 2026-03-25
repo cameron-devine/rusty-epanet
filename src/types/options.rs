@@ -1,3 +1,5 @@
+//! Analysis option enumerations: [`FlowUnits`], [`HeadLossType`], [`TimeParameter`],
+//! [`Option`], [`QualityType`], and related types.
 use crate::bindings::*;
 use num_derive::FromPrimitive;
 #[cfg(test)]
