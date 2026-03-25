@@ -2,7 +2,7 @@
 
 > **Status: Early Development (v0.2.1)**
 
-Safe Rust bindings to the [EPANET 2.3](https://github.com/OpenWaterAnalytics/EPANET) C library for water distribution network modeling and simulation. The EPANET source is included as a git submodule, compiled via CMake at build time, and exposed through `bindgen`-generated FFI bindings. A high-level `EPANET` struct wraps the raw C API with automatic resource cleanup, and domain structs (`Node`, `Link`, `Pattern`, etc.) provide an RAII layer for working with model objects.
+Safe Rust bindings to the [EPANET 2.3](https://github.com/OpenWaterAnalytics/EPANET) C library for water distribution network modeling and simulation. The EPANET C library is compiled at build time via [`epanet-sys`](https://crates.io/crates/epanet-sys). A high-level `EPANET` struct wraps the raw C API with automatic resource cleanup, and domain structs (`Node`, `Link`, `Pattern`, etc.) provide an RAII layer for working with model objects.
 
 ## Prerequisites
 
@@ -12,22 +12,15 @@ Safe Rust bindings to the [EPANET 2.3](https://github.com/OpenWaterAnalytics/EPA
 
 ## Installing
 
-Clone with the submodule:
-
-```bash
-git clone --recurse-submodules https://github.com/<your-org>/rusty-epanet.git
-```
-
-If you already cloned without the submodule:
-
-```bash
-git submodule update --init --recursive
+```toml
+[dependencies]
+epanet = "0.2"
 ```
 
 ## Building and Running Tests
 
 ```bash
-cargo build    # compiles EPANET C lib via cmake, generates FFI bindings via bindgen
+cargo build    # epanet-sys compiles the EPANET C library via CMake
 cargo test     # runs ~120 tests across unit, integration, and doc tests
 ```
 
@@ -47,7 +40,7 @@ Or in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-epanet = { version = "0.1", default-features = false, features = ["dynamic-link"] }
+epanet = { version = "0.3", default-features = false, features = ["dynamic-link"] }
 ```
 
 With dynamic linking, you must ensure `epanet2.dll` (Windows), `libepanet2.so` (Linux), or `libepanet2.dylib` (macOS) is on the library search path at runtime.
@@ -412,9 +405,9 @@ Separate `EPANET` instances (different projects) can safely run on different thr
 ```
 src/
   lib.rs              # EPANET struct (owns EN_Project handle), Drop, Send, constructors
-  bindings.rs         # include!() of bindgen output
+  bindings.rs         # re-exports from epanet-sys
   epanet_error.rs     # EPANETError, Result<T>, check_error()
-  error_messages.rs   # Generated: error code -> &'static str
+  error_messages.rs   # Static error code -> &'static str lookup
   types/              # Enums, domain structs, and type definitions
     analysis.rs       # Unified typestate Solver<S> (HClosed → HRunning → HydDone → QRunning …)
     node.rs           # Node struct, NodeKind enum, JunctionData/TankData/ReservoirData
@@ -448,11 +441,10 @@ tests/
 
 | Crate | Purpose |
 |-------|---------|
+| `epanet-sys` | Raw FFI bindings and EPANET C compilation |
 | `num-traits` / `num-derive` | `FromPrimitive` for C enum conversion |
 | `rstest` (dev) | Fixture-based test framework |
 | `strum` / `strum_macros` (dev) | Enum iteration in tests |
-| `bindgen` (build) | C header -> Rust FFI bindings |
-| `cmake` (build) | Build EPANET C library |
 
 ### Feature Flags
 
