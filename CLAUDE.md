@@ -18,7 +18,7 @@ cargo test     # requires the built dynamic library on the library search path
 The build script (`build.rs`) does three things:
 1. Compiles the EPANET C source from the `EPANET/` git submodule using CMake (Release mode).
 2. Generates Rust FFI bindings from `wrapper.h` -> `$OUT_DIR/bindings.rs` using bindgen.
-3. Parses `EPANET/src/errors.dat` to generate `src/error_messages.rs` (error code -> static string match).
+3. Parses `EPANET/src/errors.dat` to generate `$OUT_DIR/error_messages.rs` (error code -> static string match), included via `include!()` in `src/error_messages.rs`.
 
 Links dynamically against `epanet2`.
 
@@ -67,7 +67,7 @@ All C API calls return `i32` (0 = success). Two helpers convert these:
 - `check_error(code)` -> `Result<()>`
 - `check_error_with_context(code, msg)` -> `Result<()>` with debug context
 
-`EPANETError` holds `code: i32`, `message: &'static str` (from generated match), optional `context: String`. Compared by code only (`PartialEq`).
+`EPANETError` holds `code: i32`, `message: &'static str` (from generated match), optional `context: String`. Compared by code only (`PartialEq`). Helpers: `.is_warning()` (codes 1–99), `.is_error()` (codes ≥ 100).
 
 ### FFI Pattern
 ```rust
